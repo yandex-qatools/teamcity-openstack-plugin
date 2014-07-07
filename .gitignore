@@ -1,1 +1,4 @@
-.iml
+# idea settings
+*.iml
+.idea/
+target/
