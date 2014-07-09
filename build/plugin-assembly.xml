@@ -19,8 +19,8 @@
     <moduleSet>
        <useAllReactorProjects>true</useAllReactorProjects>
        <includes>
-           <include>ru.yandex.teamcity.plugins:cloud-openstack-server</include>
-           <include>ru.yandex.teamcity.plugins:cloud-openstack-common</include>
+           <include>jetbrains.buildServer.clouds:cloud-openstack-server</include>
+           <include>jetbrains.buildServer.clouds:cloud-openstack-common</include>
        </includes> 
        <binaries>
            <outputDirectory>server</outputDirectory>
