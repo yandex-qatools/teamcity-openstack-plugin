@@ -17,23 +17,24 @@ import java.util.Map;
 
 
 public class OpenstackCloudClientFactory implements CloudClientFactory {
-    @NotNull private final String myJspPath;
+    @NotNull
+    private final String myJspPath;
 
     public OpenstackCloudClientFactory(
             @NotNull final CloudRegistrar cloudRegistrar,
             final PluginDescriptor pluginDescriptor) {
-                myJspPath = pluginDescriptor.getPluginResourcesPath("profile-settings.jsp");
-                cloudRegistrar.registerCloudFactory(this);
+        myJspPath = pluginDescriptor.getPluginResourcesPath("profile-settings.jsp");
+        cloudRegistrar.registerCloudFactory(this);
     }
 
     @NotNull
     public String getCloudCode() {
-        return OpenstackCloudConstants.CLOUD_TYPE;
+        return OpenstackCloudParameters.CLOUD_TYPE;
     }
 
     @NotNull
     public String getDisplayName() {
-        return OpenstackCloudConstants.CLOUD_DISPLAY_NAME;
+        return OpenstackCloudParameters.CLOUD_DISPLAY_NAME;
     }
 
     @Nullable
@@ -58,7 +59,7 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
 
     public boolean canBeAgentOfType(@NotNull final AgentDescription agentDescription) {
         final Map<String, String> configParams = agentDescription.getConfigurationParameters();
-        return configParams.containsKey(OpenstackCloudConstants.IMAGE_ID_PARAM_NAME) && configParams.containsKey(OpenstackCloudConstants.INSTANCE_ID_PARAM_NAME);
+        return configParams.containsKey(OpenstackCloudParameters.IMAGE_ID_PARAM_NAME) && configParams.containsKey(OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME);
     }
 
     @NotNull

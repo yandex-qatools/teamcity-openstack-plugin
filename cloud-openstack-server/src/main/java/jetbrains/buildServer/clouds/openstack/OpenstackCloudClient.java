@@ -1,12 +1,13 @@
 package jetbrains.buildServer.clouds.openstack;
 
-import jetbrains.buildServer.util.StringUtil;
 import jetbrains.buildServer.clouds.*;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.util.NamedDeamonThreadFactory;
+import jetbrains.buildServer.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.yaml.snakeyaml.Yaml;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,16 +17,23 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class OpenstackCloudClient extends BuildServerAdapter implements CloudClientEx {
-    @NotNull private final List<OpenstackCloudImage> myImages = new ArrayList<OpenstackCloudImage>();
-    @Nullable private final CloudErrorInfo myErrorInfo;
-    @NotNull private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(new NamedDeamonThreadFactory("openstack-cloud-image"));
+    @NotNull
+    private final List<OpenstackCloudImage> myImages = new ArrayList<OpenstackCloudImage>();
+    @Nullable
+    private final CloudErrorInfo myErrorInfo;
+    @NotNull
+    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(new NamedDeamonThreadFactory("openstack-cloud-image"));
 
     public OpenstackCloudClient(@NotNull final CloudClientParameters params) {
-        final String images = params.getParameter(OpenstackCloudConstants.IMAGES_PROFILE_SETTING);
+        final String images = params.getParameter(OpenstackCloudParameters.IMAGES_PROFILE_SETTING);
         if (images == null || images.trim().length() == 0) {
             myErrorInfo = new CloudErrorInfo("No images specified");
             return;
         }
+
+        Yaml yaml = new Yaml();
+        Object obj = yaml.load(images);
+        System.out.println(obj);
 
         final IdGenerator imageIdGenerator = new IdGenerator();
 
@@ -64,6 +72,11 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         }
 
         myErrorInfo = error.length() == 0 ? null : new CloudErrorInfo(error.substring(1));
+    }
+
+    @NotNull
+    public static String generateAgentName(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId) {
+        return "img-" + image.getName() + "-" + instanceId;
     }
 
     public boolean isInitialized() {
@@ -116,21 +129,16 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     }
 
     @NotNull
-    public static String generateAgentName(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId) {
-        return "img-" + image.getName() + "-" + instanceId;
-    }
-
-    @NotNull
     public CloudInstance startNewInstance(@NotNull final CloudImage image, @NotNull final CloudInstanceUserData data) throws QuotaException {
-        return ((OpenstackCloudImage)image).startNewInstance(data);
+        return ((OpenstackCloudImage) image).startNewInstance(data);
     }
 
     public void restartInstance(@NotNull final CloudInstance instance) {
-        ((OpenstackCloudInstance)instance).restart();
+        ((OpenstackCloudInstance) instance).restart();
     }
 
     public void terminateInstance(@NotNull final CloudInstance instance) {
-        ((OpenstackCloudInstance)instance).terminate();
+        ((OpenstackCloudInstance) instance).terminate();
     }
 
     public void dispose() {
@@ -143,12 +151,12 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
     @Nullable
     private OpenstackCloudImage findImage(@NotNull final AgentDescription agentDescription) {
-        final String imageId = agentDescription.getConfigurationParameters().get(OpenstackCloudConstants.IMAGE_ID_PARAM_NAME);
+        final String imageId = agentDescription.getConfigurationParameters().get(OpenstackCloudParameters.IMAGE_ID_PARAM_NAME);
         return imageId == null ? null : findImageById(imageId);
     }
 
     @Nullable
     private String findInstanceId(@NotNull final AgentDescription agentDescription) {
-        return agentDescription.getConfigurationParameters().get(OpenstackCloudConstants.INSTANCE_ID_PARAM_NAME);
+        return agentDescription.getConfigurationParameters().get(OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME);
     }
 }
