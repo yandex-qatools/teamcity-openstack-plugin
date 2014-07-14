@@ -264,7 +264,7 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
 
             for (String dir : new String[]{"bin", "launcher/bin"}) {
                 //final File basePath = new File(myImage.getAgentHomeDir(), dir);
-                final File basePath = new File(myImage.getAgentHomeDir(), dir);
+                final File basePath = new File(dir);
                 final File[] files = basePath.listFiles(new FilenameFilter() {
                     public boolean accept(File dir, String name) {
                         return name.endsWith(".sh");

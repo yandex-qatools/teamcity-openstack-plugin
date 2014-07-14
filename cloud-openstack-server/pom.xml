@@ -32,6 +32,7 @@
       <artifactId>snakeyaml</artifactId>
       <version>1.14-SNAPSHOT</version>
     </dependency>
+
     <!-- these are bundled with teamcity -->
     <dependency>
       <artifactId>cloud-shared</artifactId>

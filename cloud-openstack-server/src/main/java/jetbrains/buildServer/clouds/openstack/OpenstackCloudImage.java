@@ -88,10 +88,6 @@ public class OpenstackCloudImage implements CloudImage {
         myIsEternalStarting = isEternalStarting;
     }
 
-    public void addExtraProperty(@NotNull final String name, @NotNull final String value) {
-        myExtraProperties.put(name, value);
-    }
-
     @NotNull
     public Map<String, String> getExtraProperties() {
         return myExtraProperties;

@@ -63,9 +63,6 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
                 if (line.contains("delay")) image.setIsEternalStarting(true);
                 if (!line.startsWith("prop:")) continue;
                 String[] kv = line.substring(5).trim().split("=", 2);
-                if (kv.length == 2) {
-                    image.addExtraProperty(kv[0].trim(), kv[1].trim());
-                }
             }
 
             myImages.add(image);
