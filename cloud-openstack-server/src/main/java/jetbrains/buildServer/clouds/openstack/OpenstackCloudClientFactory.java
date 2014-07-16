@@ -58,12 +58,14 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
     }
 
     public boolean canBeAgentOfType(@NotNull final AgentDescription agentDescription) {
+        System.out.println("canBeAgentOfType");
         final Map<String, String> configParams = agentDescription.getConfigurationParameters();
         return configParams.containsKey(OpenstackCloudParameters.IMAGE_ID_PARAM_NAME) && configParams.containsKey(OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME);
     }
 
     @NotNull
     public OpenstackCloudClient createNewClient(@NotNull final CloudState state, @NotNull final CloudClientParameters params) {
+        System.out.println("createNewClient");
         return new OpenstackCloudClient(params);
     }
 }

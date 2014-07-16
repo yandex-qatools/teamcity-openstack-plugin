@@ -4,15 +4,11 @@ import jetbrains.buildServer.clouds.*;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.util.NamedDeamonThreadFactory;
-import jetbrains.buildServer.util.StringUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -32,51 +28,41 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         }
 
         Yaml yaml = new Yaml();
-        Object obj = yaml.load(images);
-        System.out.println(obj);
+        Map<String, Map> map = (Map) yaml.load(images);
 
         final IdGenerator imageIdGenerator = new IdGenerator();
-
         final StringBuilder error = new StringBuilder();
-        final String[] allLines = StringUtil.splitByLines(images.trim());
 
-        for (String imageInfo : allLines) {
-            imageInfo = imageInfo.trim();
-            if (imageInfo.isEmpty() || imageInfo.startsWith("@@")) continue;
+        for (Map.Entry<String, Map> entry : map.entrySet()) {
 
-            final int atPos = imageInfo.indexOf('@');
-            if (atPos < 0) {
-                error.append(" Failed to parse image info: \"").append(imageInfo).append("\".");
-                continue;
-            }
+            System.out.println("got image: " + entry.getKey() + "/" + entry.getValue());
 
-            final String imageName = imageInfo.substring(0, atPos).trim();
-            final String agentHomePath = imageInfo.substring(atPos + 1).trim();
-            final OpenstackCloudImage image = new OpenstackCloudImage(imageIdGenerator.next(), imageName, agentHomePath, myExecutor);
+            final String imageName = entry.getKey().trim();
+            final String openstackImageName = entry.getValue().get("image_name").toString().trim();
+            final String hardwareName = entry.getValue().get("hardware_name").toString().trim();
+            final String securityGroupName = entry.getValue().get("security_group").toString().trim();
+            final String keyPair = entry.getValue().get("key_pair").toString().trim();
+            final String zone = entry.getValue().get("zone").toString().trim();
+            final String networkName = entry.getValue().get("network").toString().trim();
 
-            for (String line : allLines) {
-                String prefix = "@@" + imageName + ":";
-                if (!line.startsWith(prefix)) continue;
-                line = line.substring(prefix.length()).trim();
-
-                if (line.contains("reuse")) image.setIsReusable(true);
-                if (line.contains("delay")) image.setIsEternalStarting(true);
-                if (!line.startsWith("prop:")) continue;
-                String[] kv = line.substring(5).trim().split("=", 2);
-            }
-
+            final OpenstackCloudImage image = new OpenstackCloudImage(imageIdGenerator.next(), imageName, openstackImageName, hardwareName, securityGroupName, keyPair, zone, networkName, myExecutor);
             myImages.add(image);
         }
 
         myErrorInfo = error.length() == 0 ? null : new CloudErrorInfo(error.substring(1));
+
+        System.out.println("cloud client initialized");
+        System.out.println("images: " + myImages.toString());
     }
 
     @NotNull
     public static String generateAgentName(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId) {
+        System.out.println("generateAgentName");
         return "img-" + image.getName() + "-" + instanceId;
     }
 
     public boolean isInitialized() {
+        System.out.println("isInitialized");
         return true;
     }
 
@@ -87,11 +73,13 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
                 return image;
             }
         }
+        System.out.println("findImageById");
         return null;
     }
 
     @Nullable
     public OpenstackCloudInstance findInstanceByAgent(@NotNull final AgentDescription agentDescription) {
+        System.out.println("findInstanceByAgent");
         final OpenstackCloudImage image = findImage(agentDescription);
         if (image == null) return null;
 
@@ -103,19 +91,23 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
     @NotNull
     public Collection<? extends CloudImage> getImages() throws CloudException {
+        System.out.println("getImages: "+ myImages);
         return Collections.unmodifiableList(myImages);
     }
 
     @Nullable
     public CloudErrorInfo getErrorInfo() {
+        System.out.println("getErrorInfo");
         return myErrorInfo;
     }
 
     public boolean canStartNewInstance(@NotNull final CloudImage image) {
+        System.out.println("canStartNewInstance");
         return true;
     }
 
     public String generateAgentName(@NotNull final AgentDescription agentDescription) {
+        System.out.println("generateAgentName");
         final OpenstackCloudImage image = findImage(agentDescription);
         if (image == null) return null;
 
@@ -127,18 +119,22 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
     @NotNull
     public CloudInstance startNewInstance(@NotNull final CloudImage image, @NotNull final CloudInstanceUserData data) throws QuotaException {
+        System.out.println("startNewInstance");
         return ((OpenstackCloudImage) image).startNewInstance(data);
     }
 
     public void restartInstance(@NotNull final CloudInstance instance) {
+        System.out.println("restartInstance");
         ((OpenstackCloudInstance) instance).restart();
     }
 
     public void terminateInstance(@NotNull final CloudInstance instance) {
+        System.out.println("terminateInstance");
         ((OpenstackCloudInstance) instance).terminate();
     }
 
     public void dispose() {
+        System.out.println("dispose");
         for (final OpenstackCloudImage image : myImages) {
             image.dispose();
         }
@@ -148,12 +144,15 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
     @Nullable
     private OpenstackCloudImage findImage(@NotNull final AgentDescription agentDescription) {
+        System.out.println("findImage");
         final String imageId = agentDescription.getConfigurationParameters().get(OpenstackCloudParameters.IMAGE_ID_PARAM_NAME);
         return imageId == null ? null : findImageById(imageId);
     }
 
     @Nullable
     private String findInstanceId(@NotNull final AgentDescription agentDescription) {
+        System.out.println("findInstanceId");
         return agentDescription.getConfigurationParameters().get(OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME);
     }
+
 }
