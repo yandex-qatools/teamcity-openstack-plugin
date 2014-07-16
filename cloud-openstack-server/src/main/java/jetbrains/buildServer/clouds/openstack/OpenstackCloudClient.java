@@ -14,16 +14,16 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public class OpenstackCloudClient extends BuildServerAdapter implements CloudClientEx {
     @NotNull
-    private final List<OpenstackCloudImage> myImages = new ArrayList<OpenstackCloudImage>();
+    private final List<OpenstackCloudImage> cloudImages = new ArrayList<OpenstackCloudImage>();
     @Nullable
-    private final CloudErrorInfo myErrorInfo;
+    private CloudErrorInfo errorInfo;
     @NotNull
-    private final ScheduledExecutorService myExecutor = Executors.newSingleThreadScheduledExecutor(new NamedDeamonThreadFactory("openstack-cloud-image"));
+    private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(new NamedDeamonThreadFactory("openstack-cloud-image"));
 
     public OpenstackCloudClient(@NotNull final CloudClientParameters params) {
         final String images = params.getParameter(OpenstackCloudParameters.IMAGES_PROFILE_SETTING);
         if (images == null || images.trim().length() == 0) {
-            myErrorInfo = new CloudErrorInfo("No images specified");
+            errorInfo = new CloudErrorInfo("No images specified");
             return;
         }
 
@@ -31,34 +31,43 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         Map<String, Map> map = (Map) yaml.load(images);
 
         final IdGenerator imageIdGenerator = new IdGenerator();
-        final StringBuilder error = new StringBuilder();
 
         for (Map.Entry<String, Map> entry : map.entrySet()) {
 
             System.out.println("got image: " + entry.getKey() + "/" + entry.getValue());
 
             final String imageName = entry.getKey().trim();
-            final String openstackImageName = entry.getValue().get("image_name").toString().trim();
-            final String hardwareName = entry.getValue().get("hardware_name").toString().trim();
-            final String securityGroupName = entry.getValue().get("security_group").toString().trim();
-            final String keyPair = entry.getValue().get("key_pair").toString().trim();
-            final String zone = entry.getValue().get("zone").toString().trim();
-            final String networkName = entry.getValue().get("network").toString().trim();
+            final String openstackImageName = getParameter(entry.getValue(), "image_name");
+            final String hardwareName = getParameter(entry.getValue(), "hardware_name");
+            final String securityGroupName = getParameter(entry.getValue(), "security_group");
+            final String keyPair = getParameter(entry.getValue(), "key_pair");
+            final String zone = getParameter(entry.getValue(), "zone");
+            final String networkName = getParameter(entry.getValue(), "network");
 
-            final OpenstackCloudImage image = new OpenstackCloudImage(imageIdGenerator.next(), imageName, openstackImageName, hardwareName, securityGroupName, keyPair, zone, networkName, myExecutor);
-            myImages.add(image);
+            OpenstackCloudImage image = new OpenstackCloudImage(imageIdGenerator.next(), imageName, openstackImageName, hardwareName, securityGroupName, keyPair, zone, networkName, executorService);
+            cloudImages.add(image);
         }
 
-        myErrorInfo = error.length() == 0 ? null : new CloudErrorInfo(error.substring(1));
+        //errorInfo = error.length() == 0 ? null : new CloudErrorInfo(error.substring(1));
 
         System.out.println("cloud client initialized");
-        System.out.println("images: " + myImages.toString());
+        System.out.println("images: " + cloudImages.toString());
+
+
+    }
+
+    private String getParameter(Map map, String value) {
+        String result =  map.get(value).toString().trim();
+//        if (result == null || result.length() == 0) {
+//            errorInfo = new CloudErrorInfo("No " + value + " specified");
+//        }
+        return result;
     }
 
     @NotNull
     public static String generateAgentName(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId) {
         System.out.println("generateAgentName");
-        return "img-" + image.getName() + "-" + instanceId;
+        return "openstack-" + image.getName() + "-" + instanceId;
     }
 
     public boolean isInitialized() {
@@ -68,12 +77,12 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
     @Nullable
     public OpenstackCloudImage findImageById(@NotNull final String imageId) throws CloudException {
-        for (final OpenstackCloudImage image : myImages) {
+        System.out.println("findImageById");
+        for (final OpenstackCloudImage image : cloudImages) {
             if (image.getId().equals(imageId)) {
                 return image;
             }
         }
-        System.out.println("findImageById");
         return null;
     }
 
@@ -91,14 +100,14 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
     @NotNull
     public Collection<? extends CloudImage> getImages() throws CloudException {
-        System.out.println("getImages: "+ myImages);
-        return Collections.unmodifiableList(myImages);
+        System.out.println("getImages: "+ cloudImages);
+        return Collections.unmodifiableList(cloudImages);
     }
 
     @Nullable
     public CloudErrorInfo getErrorInfo() {
         System.out.println("getErrorInfo");
-        return myErrorInfo;
+        return errorInfo;
     }
 
     public boolean canStartNewInstance(@NotNull final CloudImage image) {
@@ -135,11 +144,11 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
     public void dispose() {
         System.out.println("dispose");
-        for (final OpenstackCloudImage image : myImages) {
+        for (final OpenstackCloudImage image : cloudImages) {
             image.dispose();
         }
-        myImages.clear();
-        myExecutor.shutdown();
+        cloudImages.clear();
+        executorService.shutdown();
     }
 
     @Nullable

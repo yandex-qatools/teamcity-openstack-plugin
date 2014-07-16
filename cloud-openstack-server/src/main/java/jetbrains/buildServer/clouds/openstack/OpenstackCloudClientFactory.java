@@ -59,8 +59,10 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
 
     public boolean canBeAgentOfType(@NotNull final AgentDescription agentDescription) {
         System.out.println("canBeAgentOfType");
-        final Map<String, String> configParams = agentDescription.getConfigurationParameters();
-        return configParams.containsKey(OpenstackCloudParameters.IMAGE_ID_PARAM_NAME) && configParams.containsKey(OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME);
+//        TODO: Agent does not have any specific parameters defined, find out a way to do this to narrow the search for agents
+//        final Map<String, String> configParams = agentDescription.getConfigurationParameters();
+//        return configParams.containsKey(OpenstackCloudParameters.IMAGE_ID_PARAM_NAME) && configParams.containsKey(OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME);
+        return true;
     }
 
     @NotNull

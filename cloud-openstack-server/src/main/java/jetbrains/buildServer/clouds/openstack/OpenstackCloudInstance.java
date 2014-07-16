@@ -144,6 +144,7 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
     protected abstract void cleanupStoppedInstance();
 
     private void waitForStatus(@NotNull final InstanceStatus status) {
+        System.out.println("waitForStatus");
         new WaitFor(STATUS_WAITING_TIMEOUT) {
             @Override
             protected boolean condition() {
@@ -151,6 +152,8 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
             }
         };
     }
+
+    public abstract boolean isRestartable();
 
     private void processError(@NotNull final Exception e) {
         final String message = e.getMessage();

@@ -1,15 +1,11 @@
 package jetbrains.buildServer.clouds.openstack;
 
-import jetbrains.buildServer.clouds.CloudErrorInfo;
-import jetbrains.buildServer.clouds.CloudImage;
-import jetbrains.buildServer.clouds.CloudInstance;
-import jetbrains.buildServer.clouds.CloudInstanceUserData;
+import jetbrains.buildServer.clouds.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,10 +32,9 @@ public class OpenstackCloudImage implements CloudImage {
     private final CloudErrorInfo errorInfo;
     private boolean myIsReusable;
     @NotNull
-    private final Map<String, OpenstackCloudInstance> myInstances = new ConcurrentHashMap<String, OpenstackCloudInstance>();
+    private final Map<String, OpenstackCloudInstance> instances = new ConcurrentHashMap<String, OpenstackCloudInstance>();
     @NotNull
     private final IdGenerator myInstanceIdGenerator = new IdGenerator();
-    private final Map<String, String> myExtraProperties = new HashMap<String, String>();
     @NotNull
     private final ScheduledExecutorService myExecutor;
 
@@ -65,6 +60,7 @@ public class OpenstackCloudImage implements CloudImage {
         this.errorInfo = null; // FIXME
 
         System.out.println("image initialized");
+
     }
 
     public boolean isReusable() {
@@ -94,28 +90,38 @@ public class OpenstackCloudImage implements CloudImage {
 
     @NotNull
     public Collection<? extends CloudInstance> getInstances() {
-        System.out.println("getInstances: " + myInstances.values());
-        return Collections.unmodifiableCollection(myInstances.values());
+        System.out.println("getInstances: " + instances.values());
+        return Collections.unmodifiableCollection(instances.values());
     }
 
     @Nullable
     public OpenstackCloudInstance findInstanceById(@NotNull final String instanceId) {
         System.out.println("findInstanceById");
-        return myInstances.get(instanceId);
+        return instances.get(instanceId);
     }
 
     @NotNull
     public synchronized OpenstackCloudInstance startNewInstance(@NotNull final CloudInstanceUserData data) {
         System.out.println("startNewInstance");
-        for (Map.Entry<String, String> e : myExtraProperties.entrySet()) {
-            data.addAgentConfigurationParameter(e.getKey(), e.getValue());
+//        for (Map.Entry<String, String> e : myExtraProperties.entrySet()) {
+//            data.addAgentConfigurationParameter(e.getKey(), e.getValue());
+//        }
+//
+//        final String instanceId = myInstanceIdGenerator.next();
+//        final OpenstackCloudInstance instance = createInstance(instanceId);
+//        instances.put(instanceId, instance);
+//        instance.start(data);
+//        return instance;
+
+        // check reusable instances
+        for (OpenstackCloudInstance instance : instances.values()) {
+            if (instance.getErrorInfo() == null && instance.getStatus() == InstanceStatus.STOPPED && instance.isRestartable()) {
+                instance.start(data);
+                return instance;
+            }
         }
 
-        final String instanceId = myInstanceIdGenerator.next();
-        final OpenstackCloudInstance instance = createInstance(instanceId);
-        myInstances.put(instanceId, instance);
-        instance.start(data);
-        return instance;
+        return null;
     }
 
     protected OpenstackCloudInstance createInstance(String instanceId) {
@@ -128,14 +134,14 @@ public class OpenstackCloudImage implements CloudImage {
 
     void forgetInstance(@NotNull final OpenstackCloudInstance instance) {
         System.out.println("forgetInstance");
-        myInstances.remove(instance.getInstanceId());
+        instances.remove(instance.getInstanceId());
     }
 
     void dispose() {
         System.out.println("dispose");
-        for (final OpenstackCloudInstance instance : myInstances.values()) {
+        for (final OpenstackCloudInstance instance : instances.values()) {
             instance.terminate();
         }
-        myInstances.clear();
+        instances.clear();
     }
 }

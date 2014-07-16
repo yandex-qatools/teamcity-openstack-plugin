@@ -14,10 +14,10 @@ public class OneUseOpenstackCloudInstance extends OpenstackCloudInstance {
         super(image, instanceId, executor);
     }
 
-//    @Override
-//    public boolean isRestartable() {
-//        return false;
-//    }
+    @Override
+    public boolean isRestartable() {
+        return false;
+    }
 
     @Override
     protected void cleanupStoppedInstance() {
