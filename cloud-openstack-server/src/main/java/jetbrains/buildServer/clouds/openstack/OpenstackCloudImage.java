@@ -13,14 +13,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class OpenstackCloudImage implements CloudImage {
-    @NotNull private final String myId;
-    @NotNull private final String myName;
-    @NotNull private final File myAgentHomeDir;
-    @NotNull private final Map<String, OpenstackCloudInstance> myInstances = new ConcurrentHashMap<String, jetbrains.buildServer.clouds.openstack.OpenstackCloudInstance>();
+    @NotNull private final String imageId;
+    @NotNull private final String imageName;
+    @NotNull private final String openstackImageName;
+    @NotNull private final String hardwareName;
+    @NotNull private final String securityGroupName;
+    @NotNull private final String keyPair;
+    @NotNull private final String zone;
+    @NotNull private final String networkName;
+    @NotNull private final File agentHomeDir;
+
+    @NotNull private final Map<String, OpenstackCloudInstance> instances = new ConcurrentHashMap<String, jetbrains.buildServer.clouds.openstack.OpenstackCloudInstance>();
     @NotNull private final IdGenerator myInstanceIdGenerator = new IdGenerator();
-    @Nullable private final CloudErrorInfo myErrorInfo;
+    @Nullable private final CloudErrorInfo errorInfo;
+
     private boolean myIsReusable;
     private final Map<String, String> myExtraProperties = new HashMap<String, String>();
+
     @NotNull private final ScheduledExecutorService myExecutor;
 
     public OpenstackCloudImage(@NotNull final String imageId,
@@ -33,49 +42,57 @@ public class OpenstackCloudImage implements CloudImage {
                            @NotNull final String zone,
                            @NotNull final String networkName,
                            @NotNull final ScheduledExecutorService executor) {
-        myId = imageId;
-        myName = imageName;
-        myAgentHomeDir = new File(agentHomePath);
-        myExecutor = executor;
-        myErrorInfo = myAgentHomeDir.isDirectory() ? null : new CloudErrorInfo("\"" + agentHomePath + "\" is not a directory or does not exist.");
+        this.imageId = imageId;
+        this.imageName = imageName;
+        this.agentHomeDir = new File(agentHomePath);
+        this.openstackImageName = openstackImageName;
+        this.hardwareName = hardwareName;
+        this.securityGroupName = securityGroupName;
+        this.keyPair = keyPair;
+        this.zone = zone;
+        this.networkName = networkName;
+        this.myExecutor = executor;
+
+        this.errorInfo = agentHomeDir.isDirectory() ? null : new CloudErrorInfo("\"" + agentHomePath + "\" is not a directory or does not exist.");
     }
 
     public boolean isReusable() {
         return myIsReusable;
     }
 
+    // TODO: enable this as optional image paramter
     public void setIsReusable(boolean isReusable) {
         myIsReusable = isReusable;
     }
 
     @NotNull
     public String getId() {
-        return myId;
+        return imageId;
     }
 
     @NotNull
     public String getName() {
-        return myName;
+        return imageName;
     }
 
     @NotNull
     public File getAgentHomeDir() {
-        return myAgentHomeDir;
+        return agentHomeDir;
     }
 
     @NotNull
     public Collection<? extends CloudInstance> getInstances() {
-        return Collections.unmodifiableCollection(myInstances.values());
+        return Collections.unmodifiableCollection(instances.values());
     }
 
     @Nullable
     public OpenstackCloudInstance findInstanceById(@NotNull final String instanceId) {
-        return myInstances.get(instanceId);
+        return instances.get(instanceId);
     }
 
     @Nullable
     public CloudErrorInfo getErrorInfo() {
-        return myErrorInfo;
+        return errorInfo;
     }
 
     @NotNull
@@ -85,7 +102,7 @@ public class OpenstackCloudImage implements CloudImage {
         }
 
         //check reusable instances
-        for (OpenstackCloudInstance instance : myInstances.values()) {
+        for (OpenstackCloudInstance instance : instances.values()) {
             if (instance.getErrorInfo() == null && instance.getStatus() == InstanceStatus.STOPPED && instance.isRestartable()) {
                 instance.start(data);
                 return instance;
@@ -94,7 +111,7 @@ public class OpenstackCloudImage implements CloudImage {
 
         final String instanceId = myInstanceIdGenerator.next();
         final OpenstackCloudInstance instance = createInstance(instanceId);
-        myInstances.put(instanceId, instance);
+        instances.put(instanceId, instance);
         instance.start(data);
         return instance;
     }
@@ -107,13 +124,13 @@ public class OpenstackCloudImage implements CloudImage {
     }
 
     void forgetInstance(@NotNull final OpenstackCloudInstance instance) {
-        myInstances.remove(instance.getInstanceId());
+        instances.remove(instance.getInstanceId());
     }
 
     void dispose() {
-        for (final OpenstackCloudInstance instance : myInstances.values()) {
+        for (final OpenstackCloudInstance instance : instances.values()) {
             instance.terminate();
         }
-        myInstances.clear();
+        instances.clear();
     }
 }

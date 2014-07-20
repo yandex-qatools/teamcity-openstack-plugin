@@ -32,8 +32,6 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
         for (Map.Entry<String, Map> entry : map.entrySet()) {
 
-            System.out.println("got image: " + entry.getKey() + "/" + entry.getValue());
-
             final String imageName = entry.getKey().trim();
             final String openstackImageName = entry.getValue().get("image_name").toString().trim();
             final String hardwareName = entry.getValue().get("hardware_name").toString().trim();
