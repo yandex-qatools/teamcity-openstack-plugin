@@ -15,14 +15,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-
 public class OpenstackCloudClientFactory implements CloudClientFactory {
-    @NotNull
-    private final String myJspPath;
+    @NotNull private final String myJspPath;
 
-    public OpenstackCloudClientFactory(
-            @NotNull final CloudRegistrar cloudRegistrar,
-            final PluginDescriptor pluginDescriptor) {
+    public OpenstackCloudClientFactory(@NotNull final CloudRegistrar cloudRegistrar,
+                                   @NotNull final PluginDescriptor pluginDescriptor) {
         myJspPath = pluginDescriptor.getPluginResourcesPath("profile-settings.jsp");
         cloudRegistrar.registerCloudFactory(this);
     }
@@ -58,16 +55,13 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
     }
 
     public boolean canBeAgentOfType(@NotNull final AgentDescription agentDescription) {
-        System.out.println("canBeAgentOfType");
-//        TODO: Agent does not have any specific parameters defined, find out a way to do this to narrow the search for agents
-//        final Map<String, String> configParams = agentDescription.getConfigurationParameters();
-//        return configParams.containsKey(OpenstackCloudParameters.IMAGE_ID_PARAM_NAME) && configParams.containsKey(OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME);
-        return true;
+        final Map<String, String> configParams = agentDescription.getConfigurationParameters();
+        return configParams.containsKey(OpenstackCloudParameters.IMAGE_ID_PARAM_NAME) && configParams.containsKey(OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME);
     }
 
     @NotNull
     public OpenstackCloudClient createNewClient(@NotNull final CloudState state, @NotNull final CloudClientParameters params) {
-        System.out.println("createNewClient");
         return new OpenstackCloudClient(params);
     }
 }
+

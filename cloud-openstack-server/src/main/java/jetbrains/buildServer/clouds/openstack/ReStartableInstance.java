@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ScheduledExecutorService;
 
+
 public class ReStartableInstance extends OpenstackCloudInstance {
     public ReStartableInstance(@NotNull String instanceId,
                                @NotNull OpenstackCloudImage image,

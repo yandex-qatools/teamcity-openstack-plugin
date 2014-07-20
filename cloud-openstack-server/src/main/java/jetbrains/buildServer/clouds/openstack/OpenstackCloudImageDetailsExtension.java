@@ -8,8 +8,6 @@ import org.jetbrains.annotations.NotNull;
 public class OpenstackCloudImageDetailsExtension extends CloudImageDetailsExtensionBase<OpenstackCloudImage> {
     public OpenstackCloudImageDetailsExtension(@NotNull final PagePlaces pagePlaces, @NotNull final PluginDescriptor pluginDescriptor) {
         super(OpenstackCloudImage.class, pagePlaces, pluginDescriptor, "image-details.jsp");
-        System.out.println("getInstances");
         register();
-
     }
 }

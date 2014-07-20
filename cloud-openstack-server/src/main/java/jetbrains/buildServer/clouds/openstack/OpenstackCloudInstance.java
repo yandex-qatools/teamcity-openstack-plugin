@@ -40,32 +40,48 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
     private final OpenstackCloudImage myImage;
     @NotNull
     private final Date myStartDate;
-    //@NotNull
-    //private final File myBaseDir;
+    @NotNull
+    private final File myBaseDir;
     @NotNull
     private final AtomicBoolean myIsAgentExtracted = new AtomicBoolean(false);
     @NotNull
     private final AtomicBoolean myIsAgentPermissionsUpdated = new AtomicBoolean(false);
     @NotNull
     private final AtomicBoolean myIsConfigPatched = new AtomicBoolean(false);
-    @NotNull
-    private final ScheduledExecutorService myAsync;
+
     @NotNull
     private volatile InstanceStatus myStatus;
     @Nullable
     private volatile CloudErrorInfo myErrorInfo;
 
+    @NotNull
+    private final ScheduledExecutorService myAsync;
+
     public OpenstackCloudInstance(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId, @NotNull ScheduledExecutorService executor) {
         myImage = image;
-        //myBaseDir = createBaseDir(); // can set status to ERROR, so must be after "myStatus = ..." line
-        //myBaseDir.deleteOnExit();
+        myBaseDir = createBaseDir(); // can set status to ERROR, so must be after "myStatus = ..." line
+        myBaseDir.deleteOnExit();
         myStatus = InstanceStatus.SCHEDULED_TO_START;
         myId = instanceId;
         myStartDate = new Date();
         myAsync = executor;
+    }
 
-        System.out.println("instance initialized");
+    public abstract boolean isRestartable();
 
+    @NotNull
+    protected File getBaseDir() {
+        return myBaseDir;
+    }
+
+    @NotNull
+    private File createBaseDir() {
+        try {
+            return FileUtil.createTempDirectory("tc_buildAgent_", "");
+        } catch (final IOException e) {
+            processError(e);
+            return new File("");
+        }
     }
 
     @NotNull
@@ -75,7 +91,7 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
 
     @NotNull
     public String getName() {
-        return OpenstackCloudClient.generateAgentName(myImage, myId) + " (ololo_instance_name)";
+        return OpenstackCloudClient.generateAgentName(myImage, myId) + " (" + myBaseDir.getAbsolutePath() + ")";
     }
 
     @NotNull
@@ -94,7 +110,7 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
     }
 
     public String getNetworkIdentity() {
-        return "clouds.openstack." + getImageId() + "." + myId;
+        return "cloud.local." + getImageId() + "." + myId;
     }
 
     @NotNull
@@ -115,6 +131,7 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
 
     public void start(@NotNull final CloudInstanceUserData data) {
         myStatus = InstanceStatus.STARTING;
+
         myAsync.submit(ExceptionUtil.catchAll("start local cloud: " + this, new StartAgentCommand(data)));
     }
 
@@ -144,7 +161,6 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
     protected abstract void cleanupStoppedInstance();
 
     private void waitForStatus(@NotNull final InstanceStatus status) {
-        System.out.println("waitForStatus");
         new WaitFor(STATUS_WAITING_TIMEOUT) {
             @Override
             protected boolean condition() {
@@ -152,8 +168,6 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
             }
         };
     }
-
-    public abstract boolean isRestartable();
 
     private void processError(@NotNull final Exception e) {
         final String message = e.getMessage();
@@ -172,7 +186,7 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
 
     private void exec(@NotNull final String... params) throws Exception {
         final GeneralCommandLine cmd = new GeneralCommandLine();
-        final File workDir = new File("/root", "bin");
+        final File workDir = new File(myBaseDir, "bin");
         cmd.setWorkDirectory(workDir.getAbsolutePath());
         final Map<String, String> env = new HashMap<String, String>(System.getenv());
         //fix Java
@@ -196,11 +210,9 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
     }
 
     private class StartAgentCommand implements Runnable {
-
         private final CloudInstanceUserData myData;
 
         public StartAgentCommand(@NotNull final CloudInstanceUserData data) {
-            System.out.println("StartAgentCommand");
             myData = data;
         }
 
@@ -208,8 +220,8 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
             //do not re-extract agent
             if (myIsAgentExtracted.getAndSet(true)) return;
 
-            final File agentHomeDir = new File("/root/");
-            FileUtil.copyDir(agentHomeDir, new File("asdvcs"), new FileFilter() {
+            final File agentHomeDir = myImage.getAgentHomeDir();
+            FileUtil.copyDir(agentHomeDir, myBaseDir, new FileFilter() {
                 private final Set<String> ourDirsToNotToCopy = new HashSet<String>() {{
                     Collections.addAll(this, "work", "temp", "system", "contrib");
                 }};
@@ -221,9 +233,9 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
         }
 
         private void updateAgentProperties(@NotNull final CloudInstanceUserData data) throws IOException {
-            File inConfigFile = new File(new File("", "conf"), "buildAgent.properties"), outConfigFile = inConfigFile;
+            File inConfigFile = new File(new File(myBaseDir, "conf"), "buildAgent.properties"), outConfigFile = inConfigFile;
             if (!inConfigFile.isFile()) {
-                inConfigFile = new File(new File("", "conf"), "buildAgent.dist.properties");
+                inConfigFile = new File(new File(myBaseDir, "conf"), "buildAgent.dist.properties");
                 if (!inConfigFile.isFile()) {
                     inConfigFile = null;
                 }
@@ -253,8 +265,7 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
             if (!myIsAgentPermissionsUpdated.compareAndSet(false, true)) return;
 
             for (String dir : new String[]{"bin", "launcher/bin"}) {
-                //final File basePath = new File(myImage.getAgentHomeDir(), dir);
-                final File basePath = new File(dir);
+                final File basePath = new File(myImage.getAgentHomeDir(), dir);
                 final File[] files = basePath.listFiles(new FilenameFilter() {
                     public boolean accept(File dir, String name) {
                         return name.endsWith(".sh");
@@ -276,11 +287,8 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
             }
         }
 
-        //@Override
         public void run() {
             try {
-
-                //if (myImage.isEternalStarting()) return;
 
                 copyAgentToDestFolder();
                 updateAgentPermissions();

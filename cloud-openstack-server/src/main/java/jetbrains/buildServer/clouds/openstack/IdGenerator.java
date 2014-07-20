@@ -9,7 +9,6 @@ public class IdGenerator {
 
     @NotNull
     public String next() {
-        System.out.println("IdGenerator.next");
         return String.valueOf(myNextId.incrementAndGet());
     }
 }
