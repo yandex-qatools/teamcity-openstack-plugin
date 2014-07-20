@@ -3,7 +3,7 @@ package jetbrains.buildServer.clouds.openstack;
 import org.jetbrains.annotations.NotNull;
 
 public interface OpenstackCloudParameters {
-    @NotNull String CLOUD_TYPE = "NOVA";
+    @NotNull String CLOUD_TYPE = "NOVA";  //that should be equal or less than 6 symbols, thanks for brainfuck debugging jetbrains guys!
     @NotNull String CLOUD_DISPLAY_NAME = "Openstack Cloud";
 
     @NotNull String INDENTITY_URL = "clouds.openstack.identityUrl";
