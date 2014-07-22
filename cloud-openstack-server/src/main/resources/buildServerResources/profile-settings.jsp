@@ -2,16 +2,16 @@
 <%@ taglib prefix="props" tagdir="/WEB-INF/tags/props" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
-<c:set var="paramUrl" value="<%=OpenstackCloudParameters.INDENTITY_URL%>"/>
+<c:set var="paramUrl" value="<%=OpenstackCloudParameters.ENDPOINT_URL%>"/>
 <tr>
-    <th><label for="${paramUrl}">Indentity URL: <l:star/></label></th>
+    <th><label for="${paramUrl}">Endpoint URL: <l:star/></label></th>
     <td><props:textProperty name="${paramUrl}" className="longField"/>
     </td>
 </tr>
 
-<c:set var="paramUsername" value="<%=OpenstackCloudParameters.USERNAME%>"/>
+<c:set var="paramUsername" value="<%=OpenstackCloudParameters.IDENTITY%>"/>
 <tr>
-    <th><label for="${paramUsername}">Username: <l:star/></label></th>
+    <th><label for="${paramUsername}">Identity: <l:star/></label></th>
     <td><props:textProperty name="${paramUsername}" className="longField"/>
     </td>
 </tr>
@@ -23,10 +23,10 @@
     </td>
 </tr>
 
-<c:set var="paramTenant" value="<%=OpenstackCloudParameters.TENANT%>"/>
+<c:set var="paramZone" value="<%=OpenstackCloudParameters.ZONE%>"/>
 <tr>
-    <th><label for="${paramTenant}">Tenant: <l:star/></label></th>
-    <td><props:textProperty name="${paramTenant}" className="longField"/>
+    <th><label for="${paramZone}">Zone: <l:star/></label></th>
+    <td><props:textProperty name="${paramZone}" className="longField"/>
     </td>
 </tr>
 
@@ -37,14 +37,12 @@
         <props:multilineProperty name="${paramName}" className="longField" linkTitle="Agent images to run" cols="55" rows="5" expanded="${true}"/>
     <span class="smallNote">
       YAML formatted list of agent images. i.e:<br/>
-      images:<br/>
-      - name: 1<br/>
-      &nbsp;&nbsp;&nbsp;&nbsp;image_id: 2<br/>
-      &nbsp;&nbsp;&nbsp;&nbsp;hardware_id: 3<br/>
-      &nbsp;&nbsp;&nbsp;&nbsp;network: 4<br/>
-      &nbsp;&nbsp;&nbsp;&nbsp;security_group: 5<br/>
-      &nbsp;&nbsp;&nbsp;&nbsp;key_pair: 6<br/>
-      &nbsp;&nbsp;&nbsp;&nbsp;zone: 6<br/>
+      my_image_name:<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;openstack_image_name: 1<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;flavor_id: 2<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;network_id: 3<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;security_group: 4<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;key_pair: 5<br/>
     </span>
     </td>
 </tr>

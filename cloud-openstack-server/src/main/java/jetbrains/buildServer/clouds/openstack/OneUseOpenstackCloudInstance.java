@@ -2,7 +2,6 @@ package jetbrains.buildServer.clouds.openstack;
 
 import jetbrains.buildServer.clouds.CloudConstants;
 import jetbrains.buildServer.clouds.CloudInstanceUserData;
-import jetbrains.buildServer.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -23,7 +22,7 @@ public class OneUseOpenstackCloudInstance extends OpenstackCloudInstance {
     @Override
     protected void cleanupStoppedInstance() {
         getImage().forgetInstance(this);
-        FileUtil.delete(getBaseDir());
+        //FileUtil.delete(getBaseDir());
     }
 
     @Override

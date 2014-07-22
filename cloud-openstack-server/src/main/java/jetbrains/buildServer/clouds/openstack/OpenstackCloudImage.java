@@ -1,13 +1,13 @@
 package jetbrains.buildServer.clouds.openstack;
 
 import jetbrains.buildServer.clouds.*;
+import org.jclouds.compute.ComputeService;
+import org.jclouds.compute.domain.Template;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
@@ -15,45 +15,28 @@ import java.util.concurrent.ScheduledExecutorService;
 public class OpenstackCloudImage implements CloudImage {
     @NotNull private final String imageId;
     @NotNull private final String imageName;
-    @NotNull private final String openstackImageName;
-    @NotNull private final String hardwareName;
-    @NotNull private final String securityGroupName;
-    @NotNull private final String keyPair;
-    @NotNull private final String zone;
-    @NotNull private final String networkName;
-    @NotNull private final File agentHomeDir;
+    @NotNull private final ComputeService computeService;
+    @NotNull private final Template template;
 
     @NotNull private final Map<String, OpenstackCloudInstance> instances = new ConcurrentHashMap<String, jetbrains.buildServer.clouds.openstack.OpenstackCloudInstance>();
-    @NotNull private final IdGenerator myInstanceIdGenerator = new IdGenerator();
+    @NotNull private final IdGenerator instanceIdGenerator = new IdGenerator();
     @Nullable private final CloudErrorInfo errorInfo;
-
     private boolean myIsReusable;
-    private final Map<String, String> myExtraProperties = new HashMap<String, String>();
 
     @NotNull private final ScheduledExecutorService myExecutor;
 
     public OpenstackCloudImage(@NotNull final String imageId,
                            @NotNull final String imageName,
-                           @NotNull final String agentHomePath,
-                           @NotNull final String openstackImageName,
-                           @NotNull final String hardwareName,
-                           @NotNull final String securityGroupName,
-                           @NotNull final String keyPair,
-                           @NotNull final String zone,
-                           @NotNull final String networkName,
+                           @NotNull final ComputeService computeService,
+                           @NotNull final Template template,
                            @NotNull final ScheduledExecutorService executor) {
         this.imageId = imageId;
         this.imageName = imageName;
-        this.agentHomeDir = new File(agentHomePath);
-        this.openstackImageName = openstackImageName;
-        this.hardwareName = hardwareName;
-        this.securityGroupName = securityGroupName;
-        this.keyPair = keyPair;
-        this.zone = zone;
-        this.networkName = networkName;
+        this.computeService = computeService;
+        this.template = template;
         this.myExecutor = executor;
 
-        this.errorInfo = agentHomeDir.isDirectory() ? null : new CloudErrorInfo("\"" + agentHomePath + "\" is not a directory or does not exist.");
+        this.errorInfo = null;  //FIXME
     }
 
     public boolean isReusable() {
@@ -63,6 +46,11 @@ public class OpenstackCloudImage implements CloudImage {
     // TODO: enable this as optional image paramter
     public void setIsReusable(boolean isReusable) {
         myIsReusable = isReusable;
+    }
+
+    @NotNull
+    public ComputeService getComputeService() {
+        return computeService;
     }
 
     @NotNull
@@ -76,8 +64,18 @@ public class OpenstackCloudImage implements CloudImage {
     }
 
     @NotNull
-    public File getAgentHomeDir() {
-        return agentHomeDir;
+    public String getOpenstackImageName() {
+        return this.getTemplate().getImage().getName();
+    }
+
+    @NotNull
+    public String getOpenstackFalvorName() {
+        return this.getTemplate().getHardware().getName();
+    }
+
+    @NotNull
+    public Template getTemplate() {
+        return template;
     }
 
     @NotNull
@@ -97,10 +95,6 @@ public class OpenstackCloudImage implements CloudImage {
 
     @NotNull
     public synchronized OpenstackCloudInstance startNewInstance(@NotNull final CloudInstanceUserData data) {
-        for (Map.Entry<String, String> e : myExtraProperties.entrySet()) {
-            data.addAgentConfigurationParameter(e.getKey(), e.getValue());
-        }
-
         //check reusable instances
         for (OpenstackCloudInstance instance : instances.values()) {
             if (instance.getErrorInfo() == null && instance.getStatus() == InstanceStatus.STOPPED && instance.isRestartable()) {
@@ -109,7 +103,7 @@ public class OpenstackCloudImage implements CloudImage {
             }
         }
 
-        final String instanceId = myInstanceIdGenerator.next();
+        final String instanceId = instanceIdGenerator.next();
         final OpenstackCloudInstance instance = createInstance(instanceId);
         instances.put(instanceId, instance);
         instance.start(data);

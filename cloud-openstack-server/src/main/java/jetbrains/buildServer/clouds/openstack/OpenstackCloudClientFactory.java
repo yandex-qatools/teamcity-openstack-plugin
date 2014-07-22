@@ -16,11 +16,11 @@ import java.util.Collections;
 import java.util.Map;
 
 public class OpenstackCloudClientFactory implements CloudClientFactory {
-    @NotNull private final String myJspPath;
+    @NotNull private final String cloudProfileSettings;
 
     public OpenstackCloudClientFactory(@NotNull final CloudRegistrar cloudRegistrar,
                                    @NotNull final PluginDescriptor pluginDescriptor) {
-        myJspPath = pluginDescriptor.getPluginResourcesPath("profile-settings.jsp");
+        cloudProfileSettings = pluginDescriptor.getPluginResourcesPath("profile-settings.jsp");
         cloudRegistrar.registerCloudFactory(this);
     }
 
@@ -36,7 +36,7 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
 
     @Nullable
     public String getEditProfileUrl() {
-        return myJspPath;
+        return cloudProfileSettings;
     }
 
     @NotNull
