@@ -1,8 +1,8 @@
 package jetbrains.buildServer.clouds.openstack;
 
 import jetbrains.buildServer.clouds.*;
-import org.jclouds.compute.ComputeService;
-import org.jclouds.compute.domain.Template;
+import org.jclouds.openstack.nova.v2_0.features.ServerApi;
+import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,26 +15,31 @@ import java.util.concurrent.ScheduledExecutorService;
 public class OpenstackCloudImage implements CloudImage {
     @NotNull private final String imageId;
     @NotNull private final String imageName;
-    @NotNull private final ComputeService computeService;
-    @NotNull private final Template template;
+    @NotNull private final String openstackImageId;
+    @NotNull private final String flavorId;
+    @NotNull private final OpenstackApi openstackApi;
+    @NotNull private final CreateServerOptions options;
+    @NotNull private final ScheduledExecutorService executor;
 
     @NotNull private final Map<String, OpenstackCloudInstance> instances = new ConcurrentHashMap<String, jetbrains.buildServer.clouds.openstack.OpenstackCloudInstance>();
     @NotNull private final IdGenerator instanceIdGenerator = new IdGenerator();
     @Nullable private final CloudErrorInfo errorInfo;
     private boolean myIsReusable;
 
-    @NotNull private final ScheduledExecutorService myExecutor;
-
     public OpenstackCloudImage(@NotNull final String imageId,
                            @NotNull final String imageName,
-                           @NotNull final ComputeService computeService,
-                           @NotNull final Template template,
+                           @NotNull final OpenstackApi openstackApi,
+                           @NotNull final String openstackImageId,
+                           @NotNull final String flavorId,
+                           @NotNull final CreateServerOptions options,
                            @NotNull final ScheduledExecutorService executor) {
         this.imageId = imageId;
         this.imageName = imageName;
-        this.computeService = computeService;
-        this.template = template;
-        this.myExecutor = executor;
+        this.openstackApi = openstackApi;
+        this.openstackImageId = openstackImageId;
+        this.flavorId = flavorId;
+        this.options = options;
+        this.executor = executor;
 
         this.errorInfo = null;  //FIXME
     }
@@ -49,8 +54,23 @@ public class OpenstackCloudImage implements CloudImage {
     }
 
     @NotNull
-    public ComputeService getComputeService() {
-        return computeService;
+    public ServerApi getNovaApi() {
+        return openstackApi.getNovaApi();
+    }
+
+    @NotNull
+    public CreateServerOptions getOptions() {
+        return options;
+    }
+
+    @NotNull
+    public String getOpenstackImageId() {
+        return openstackApi.getImageIdByName(openstackImageId);
+    }
+
+    @NotNull
+    public String getFlavorId() {
+        return openstackApi.getFlavorIdByName(flavorId);
     }
 
     @NotNull
@@ -65,17 +85,12 @@ public class OpenstackCloudImage implements CloudImage {
 
     @NotNull
     public String getOpenstackImageName() {
-        return this.getTemplate().getImage().getName();
+        return this.openstackImageId;
     }
 
     @NotNull
     public String getOpenstackFalvorName() {
-        return this.getTemplate().getHardware().getName();
-    }
-
-    @NotNull
-    public Template getTemplate() {
-        return template;
+        return this.flavorId;
     }
 
     @NotNull
@@ -112,9 +127,9 @@ public class OpenstackCloudImage implements CloudImage {
 
     protected OpenstackCloudInstance createInstance(String instanceId) {
         if (isReusable()) {
-            return new ReStartableInstance(instanceId, this, myExecutor);
+            return new ReStartableInstance(instanceId, this, executor);
         }
-        return new OneUseOpenstackCloudInstance(instanceId, this, myExecutor);
+        return new OneUseOpenstackCloudInstance(instanceId, this, executor);
     }
 
     void forgetInstance(@NotNull final OpenstackCloudInstance instance) {

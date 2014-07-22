@@ -25,7 +25,7 @@
 
 <c:set var="paramZone" value="<%=OpenstackCloudParameters.ZONE%>"/>
 <tr>
-    <th><label for="${paramZone}">Zone: <l:star/></label></th>
+    <th><label for="${paramZone}">Region: <l:star/></label></th>
     <td><props:textProperty name="${paramZone}" className="longField"/>
     </td>
 </tr>
@@ -37,10 +37,10 @@
         <props:multilineProperty name="${paramName}" className="longField" linkTitle="Agent images to run" cols="55" rows="5" expanded="${true}"/>
     <span class="smallNote">
       YAML formatted list of agent images. i.e:<br/>
-      my_image_name:<br/>
-      &nbsp;&nbsp;&nbsp;&nbsp;openstack_image_name: 1<br/>
-      &nbsp;&nbsp;&nbsp;&nbsp;flavor_id: 2<br/>
-      &nbsp;&nbsp;&nbsp;&nbsp;network_id: 3<br/>
+      my_teamcity_image:<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;image: 1<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;flavor: 2<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;network: 3<br/>
       &nbsp;&nbsp;&nbsp;&nbsp;security_group: 4<br/>
       &nbsp;&nbsp;&nbsp;&nbsp;key_pair: 5<br/>
     </span>

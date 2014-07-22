@@ -1,6 +1,5 @@
 package jetbrains.buildServer.clouds.openstack;
 
-import com.google.common.collect.Iterables;
 import jetbrains.buildServer.clouds.CloudErrorInfo;
 import jetbrains.buildServer.clouds.CloudInstance;
 import jetbrains.buildServer.clouds.CloudInstanceUserData;
@@ -9,7 +8,9 @@ import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.util.ExceptionUtil;
 import jetbrains.buildServer.util.WaitFor;
 import org.apache.log4j.Logger;
-import org.jclouds.compute.domain.NodeMetadata;
+import org.jclouds.openstack.nova.v2_0.domain.RebootType;
+import org.jclouds.openstack.nova.v2_0.domain.ServerCreated;
+import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,18 +29,18 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
 
     @NotNull private final String instanceId;
     @NotNull private final OpenstackCloudImage cloudImage;
-    @NotNull private final Date myStartDate;
+    @NotNull private final Date startDate;
     @Nullable private volatile CloudErrorInfo errorInfo;
-    @Nullable private NodeMetadata nodeMetadata;
-    @NotNull private final ScheduledExecutorService myAsync;
+    @Nullable private ServerCreated serverCreated;
+    @NotNull private final ScheduledExecutorService executor;
 
     private final AtomicReference<InstanceStatus> status = new AtomicReference<InstanceStatus>(InstanceStatus.SCHEDULED_TO_START);
 
     public OpenstackCloudInstance(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId, @NotNull ScheduledExecutorService executor) {
         this.cloudImage = image;
         this.instanceId = instanceId;
-        this.myStartDate = new Date();
-        this.myAsync = executor;
+        this.startDate = new Date();
+        this.executor = executor;
 
         setStatus(InstanceStatus.SCHEDULED_TO_START);
     }
@@ -63,10 +64,7 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
 
     @NotNull
     public String getName() {
-        if (nodeMetadata != null) {
-            return nodeMetadata.getName();
-        }
-        return "Peding node of image: " + cloudImage.getName();
+        return cloudImage.getName() + "-" + instanceId;
     }
 
     @NotNull
@@ -81,7 +79,7 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
 
     @NotNull
     public Date getStartedTime() {
-        return myStartDate;
+        return startDate;
     }
 
     public String getNetworkIdentity() {
@@ -101,15 +99,15 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
 
     public void start(@NotNull final CloudInstanceUserData data) {
         setStatus(InstanceStatus.STARTING);
-        myAsync.submit(ExceptionUtil.catchAll("start openstack cloud: " + this, new StartAgentCommand(data)));
+        executor.submit(ExceptionUtil.catchAll("start openstack cloud: " + this, new StartAgentCommand(data)));
     }
 
     public void restart() {
         waitForStatus(InstanceStatus.RUNNING);
         setStatus(InstanceStatus.RESTARTING);
         try {
-            if (nodeMetadata != null) {
-                cloudImage.getComputeService().rebootNode(nodeMetadata.getId());
+            if (serverCreated != null) {
+                cloudImage.getNovaApi().reboot(serverCreated.getId(), RebootType.SOFT);
                 setStatus(InstanceStatus.RUNNING);
             }
         } catch (final Exception e) {
@@ -120,8 +118,8 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
     public void terminate() {
         setStatus(InstanceStatus.STOPPING);
         try {
-            if (nodeMetadata != null) {
-                cloudImage.getComputeService().destroyNode(nodeMetadata.getId());
+            if (serverCreated != null) {
+                cloudImage.getNovaApi().delete(serverCreated.getId());
             }
             setStatus(InstanceStatus.STOPPED);
             cleanupStoppedInstance();
@@ -153,8 +151,13 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
 
         public void run() {
             try {
-                nodeMetadata = Iterables.getOnlyElement(cloudImage.getComputeService().createNodesInGroup(cloudImage.getName(), 1, cloudImage.getTemplate()));
-                setStatus(InstanceStatus.RUNNING);
+                String openstackImageId = cloudImage.getOpenstackImageId();
+                String flavorId = cloudImage.getFlavorId();
+                CreateServerOptions options = cloudImage.getOptions();
+
+                serverCreated = cloudImage.getNovaApi().create(getName(), openstackImageId, flavorId, options);
+
+                setStatus(InstanceStatus.STARTING);
             } catch (final Exception e) {
                 processError(e);
             }
