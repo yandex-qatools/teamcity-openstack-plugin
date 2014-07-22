@@ -24,7 +24,6 @@ public class ReStartableInstance extends OpenstackCloudInstance {
         //NOP, meaning it could start again
     }
 
-
     @Override
     public void start(@NotNull CloudInstanceUserData data) {
         data.setAgentRemovePolicy(CloudConstants.AgentRemovePolicyValue.Unauthorize);

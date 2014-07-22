@@ -1,5 +1,6 @@
 package jetbrains.buildServer.clouds.openstack;
 
+import com.google.common.io.Closeables;
 import jetbrains.buildServer.clouds.*;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
@@ -54,8 +55,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         }
 
         Yaml yaml = new Yaml();
-        Map<String, Map> map = (Map) yaml.load(raw_yaml);
-
+        final Map<String, Map> map = (Map) yaml.load(raw_yaml);
         final IdGenerator imageIdGenerator = new IdGenerator();
         final StringBuilder error = new StringBuilder();
 
@@ -159,6 +159,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         for (final OpenstackCloudImage image : cloudImages) { image.dispose(); }
         cloudImages.clear();
         executor.shutdown();
+        Closeables.closeQuietly(computeService.getContext());
     }
 
     @Nullable

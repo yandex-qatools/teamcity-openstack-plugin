@@ -29,13 +29,11 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
     @NotNull private final String instanceId;
     @NotNull private final OpenstackCloudImage cloudImage;
     @NotNull private final Date myStartDate;
+    @Nullable private volatile CloudErrorInfo errorInfo;
+    @Nullable private NodeMetadata nodeMetadata;
+    @NotNull private final ScheduledExecutorService myAsync;
 
     private final AtomicReference<InstanceStatus> status = new AtomicReference<InstanceStatus>(InstanceStatus.SCHEDULED_TO_START);
-    @Nullable private volatile CloudErrorInfo errorInfo;
-
-    @Nullable private NodeMetadata nodeMetadata;
-
-    @NotNull private final ScheduledExecutorService myAsync;
 
     public OpenstackCloudInstance(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId, @NotNull ScheduledExecutorService executor) {
         this.cloudImage = image;
@@ -65,7 +63,10 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
 
     @NotNull
     public String getName() {
-        return OpenstackCloudClient.generateAgentName(cloudImage, instanceId) + " (" + cloudImage.getOpenstackImageName() + ":" + cloudImage.getOpenstackFalvorName() + ")";
+        if (nodeMetadata != null) {
+            return nodeMetadata.getName();
+        }
+        return "Peding node of image: " + cloudImage.getName();
     }
 
     @NotNull
@@ -107,9 +108,10 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
         waitForStatus(InstanceStatus.RUNNING);
         setStatus(InstanceStatus.RESTARTING);
         try {
-            //doStop();
-            Thread.sleep(3000);
-            //doStart();
+            if (nodeMetadata != null) {
+                cloudImage.getComputeService().rebootNode(nodeMetadata.getId());
+                setStatus(InstanceStatus.RUNNING);
+            }
         } catch (final Exception e) {
             processError(e);
         }
@@ -118,7 +120,9 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
     public void terminate() {
         setStatus(InstanceStatus.STOPPING);
         try {
-            //doStop();
+            if (nodeMetadata != null) {
+                cloudImage.getComputeService().destroyNode(nodeMetadata.getId());
+            }
             setStatus(InstanceStatus.STOPPED);
             cleanupStoppedInstance();
         } catch (final Exception e) {
@@ -145,44 +149,11 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
     }
 
     private class StartAgentCommand implements Runnable {
-        private final CloudInstanceUserData data;
-
-        public StartAgentCommand(@NotNull final CloudInstanceUserData data) {
-            this.data = data;
-        }
-
-//        private void updateAgentProperties(@NotNull final CloudInstanceUserData data) throws IOException {
-//            File inConfigFile = new File(new File(myBaseDir, "conf"), "buildAgent.properties"), outConfigFile = inConfigFile;
-//            if (!inConfigFile.isFile()) {
-//                inConfigFile = new File(new File(myBaseDir, "conf"), "buildAgent.dist.properties");
-//                if (!inConfigFile.isFile()) {
-//                    inConfigFile = null;
-//                }
-//            }
-//            final Properties config = PropertiesUtil.loadProperties(inConfigFile);
-//
-//            config.put("serverUrl", data.getServerAddress());
-//            config.put("workDir", "../work");
-//            config.put("tempDir", "../temp");
-//            config.put("systemDir", "../system");
-//
-//            //agent name and auth-token must be patched only once
-//            if (!myIsConfigPatched.getAndSet(true)) {
-//                config.put("name", data.getAgentName());
-//                config.put("authorizationToken", data.getAuthToken());
-//            }
-//            for (final Map.Entry<String, String> param : data.getCustomAgentConfigurationParameters().entrySet()) {
-//                config.put(param.getKey(), param.getValue());
-//            }
-//            config.put(IMAGE_ID_PARAM_NAME, getImageId());
-//            config.put(INSTANCE_ID_PARAM_NAME, instanceId);
-//            PropertiesUtil.storeProperties(config, outConfigFile, null);
-//        }
+        public StartAgentCommand(@NotNull final CloudInstanceUserData data) {}
 
         public void run() {
             try {
-                NodeMetadata nodeMetaData = Iterables.getOnlyElement(cloudImage.getComputeService().createNodesInGroup(cloudImage.getName(), 1, cloudImage.getTemplate()));
-                //updateAgentProperties(data);
+                nodeMetadata = Iterables.getOnlyElement(cloudImage.getComputeService().createNodesInGroup(cloudImage.getName(), 1, cloudImage.getTemplate()));
                 setStatus(InstanceStatus.RUNNING);
             } catch (final Exception e) {
                 processError(e);

@@ -22,7 +22,6 @@ public class OneUseOpenstackCloudInstance extends OpenstackCloudInstance {
     @Override
     protected void cleanupStoppedInstance() {
         getImage().forgetInstance(this);
-        //FileUtil.delete(getBaseDir());
     }
 
     @Override
