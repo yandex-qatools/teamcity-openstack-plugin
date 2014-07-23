@@ -7,6 +7,7 @@ import jetbrains.buildServer.clouds.CloudState;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.InvalidProperty;
 import jetbrains.buildServer.serverSide.PropertiesProcessor;
+import jetbrains.buildServer.util.NamedDeamonThreadFactory;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,6 +15,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class OpenstackCloudClientFactory implements CloudClientFactory {
     @NotNull private final String cloudProfileSettings;
@@ -61,7 +64,12 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
 
     @NotNull
     public OpenstackCloudClient createNewClient(@NotNull final CloudState state, @NotNull final CloudClientParameters params) {
-        return new OpenstackCloudClient(params);
+        return new OpenstackCloudClient(params, new ExecutorServiceFactory() {
+            @NotNull
+            public ScheduledExecutorService createExecutorService(@NotNull final String duty) {
+                return Executors.newSingleThreadScheduledExecutor(new NamedDeamonThreadFactory("vmware-" + duty));
+            }
+        });
     }
 }
 

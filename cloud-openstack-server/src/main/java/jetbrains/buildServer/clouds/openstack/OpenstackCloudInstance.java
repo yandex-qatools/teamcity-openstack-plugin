@@ -1,14 +1,12 @@
 package jetbrains.buildServer.clouds.openstack;
 
-import jetbrains.buildServer.clouds.CloudErrorInfo;
-import jetbrains.buildServer.clouds.CloudInstance;
-import jetbrains.buildServer.clouds.CloudInstanceUserData;
-import jetbrains.buildServer.clouds.InstanceStatus;
+import jetbrains.buildServer.clouds.*;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.util.ExceptionUtil;
 import jetbrains.buildServer.util.WaitFor;
 import org.apache.log4j.Logger;
 import org.jclouds.openstack.nova.v2_0.domain.RebootType;
+import org.jclouds.openstack.nova.v2_0.domain.Server;
 import org.jclouds.openstack.nova.v2_0.domain.ServerCreated;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
@@ -44,11 +42,18 @@ public class OpenstackCloudInstance implements CloudInstance {
         setStatus(InstanceStatus.SCHEDULED_TO_START);
     }
 
-    public boolean isRestartable() {
-        return false;
+    public synchronized void updateStatus() {
+        if (serverCreated != null) {
+            Server server = cloudImage.getNovaApi().get(serverCreated.getId());
+            if (server != null) {
+                Server.Status currentStatus = server.getStatus();
+                if (currentStatus == Server.Status.ACTIVE) setStatus(InstanceStatus.RUNNING);
+                if (currentStatus == Server.Status.DELETED || currentStatus == Server.Status.SOFT_DELETED) setStatus(InstanceStatus.STOPPED);
+            } else {
+                setStatus(InstanceStatus.STOPPED);
+            }
+        }
     }
-
-    public void cleanupStoppedInstance() {}
 
     @NotNull
     public InstanceStatus getStatus() {
@@ -101,6 +106,7 @@ public class OpenstackCloudInstance implements CloudInstance {
     }
 
     public void start(@NotNull final CloudInstanceUserData data) {
+        data.setAgentRemovePolicy(CloudConstants.AgentRemovePolicyValue.RemoveAgent);
         setStatus(InstanceStatus.STARTING);
         executor.submit(ExceptionUtil.catchAll("start openstack cloud: " + this, new StartAgentCommand(data)));
     }
@@ -119,13 +125,12 @@ public class OpenstackCloudInstance implements CloudInstance {
     }
 
     public void terminate() {
-        setStatus(InstanceStatus.STOPPING);
+        setStatus(InstanceStatus.SCHEDULED_TO_STOP);
         try {
             if (serverCreated != null) {
                 cloudImage.getNovaApi().delete(serverCreated.getId());
+                setStatus(InstanceStatus.STOPPING);
             }
-            setStatus(InstanceStatus.STOPPED);
-            cleanupStoppedInstance();
         } catch (final Exception e) {
             processError(e);
         }
@@ -154,7 +159,7 @@ public class OpenstackCloudInstance implements CloudInstance {
             try {
                 String openstackImageId = cloudImage.getOpenstackImageId();
                 String flavorId = cloudImage.getFlavorId();
-                CreateServerOptions options = cloudImage.getOptions();
+                CreateServerOptions options = cloudImage.getImageOptions();
 
                 serverCreated = cloudImage.getNovaApi().create(getName(), openstackImageId, flavorId, options);
 

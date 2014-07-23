@@ -6,17 +6,16 @@ import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class OpenstackCloudImage implements CloudImage {
     @NotNull private final String imageId;
     @NotNull private final String imageName;
-    @NotNull private final String openstackImageId;
-    @NotNull private final String flavorId;
+    @NotNull private final String openstackImageName;
+    @NotNull private final String flavorName;
     @NotNull private final OpenstackApi openstackApi;
     @NotNull private final CreateServerOptions options;
     @NotNull private final ScheduledExecutorService executor;
@@ -24,33 +23,33 @@ public class OpenstackCloudImage implements CloudImage {
     @NotNull private final Map<String, OpenstackCloudInstance> instances = new ConcurrentHashMap<String, OpenstackCloudInstance>();
     @NotNull private final IdGenerator instanceIdGenerator = new IdGenerator();
     @Nullable private final CloudErrorInfo errorInfo;
-    private boolean myIsReusable;
 
     public OpenstackCloudImage(@NotNull final String imageId,
                            @NotNull final String imageName,
                            @NotNull final OpenstackApi openstackApi,
-                           @NotNull final String openstackImageId,
+                           @NotNull final String openstackImageName,
                            @NotNull final String flavorId,
                            @NotNull final CreateServerOptions options,
                            @NotNull final ScheduledExecutorService executor) {
         this.imageId = imageId;
         this.imageName = imageName;
         this.openstackApi = openstackApi;
-        this.openstackImageId = openstackImageId;
-        this.flavorId = flavorId;
+        this.openstackImageName = openstackImageName;
+        this.flavorName = flavorId;
         this.options = options;
         this.executor = executor;
 
         this.errorInfo = null;  //FIXME
-    }
 
-    public boolean isReusable() {
-        return myIsReusable;
-    }
-
-    // TODO: enable this as optional image paramter
-    public void setIsReusable(boolean isReusable) {
-        myIsReusable = isReusable;
+        this.executor.scheduleWithFixedDelay(new Runnable() {
+            public void run() {
+                final Collection<OpenstackCloudInstance> instances = (Collection<OpenstackCloudInstance>) getInstances();
+                for (OpenstackCloudInstance instance : instances) {
+                    instance.updateStatus();
+                    if (instance.getStatus() == InstanceStatus.STOPPED) forgetInstance(instance);
+                }
+            }
+        }, 3, 3, TimeUnit.SECONDS);
     }
 
     @NotNull
@@ -58,19 +57,23 @@ public class OpenstackCloudImage implements CloudImage {
         return openstackApi.getNovaApi();
     }
 
+    private void forgetInstance(@NotNull final OpenstackCloudInstance instance) {
+        instances.remove(instance.getInstanceId());
+    }
+
     @NotNull
-    public CreateServerOptions getOptions() {
+    public CreateServerOptions getImageOptions() {
         return options;
     }
 
     @NotNull
     public String getOpenstackImageId() {
-        return openstackApi.getImageIdByName(openstackImageId);
+        return openstackApi.getImageIdByName(openstackImageName);
     }
 
     @NotNull
     public String getFlavorId() {
-        return openstackApi.getFlavorIdByName(flavorId);
+        return openstackApi.getFlavorIdByName(flavorName);
     }
 
     @NotNull
@@ -85,16 +88,16 @@ public class OpenstackCloudImage implements CloudImage {
 
     @NotNull
     public String getOpenstackImageName() {
-        return this.openstackImageId;
+        return this.openstackImageName;
     }
 
     @NotNull
     public String getOpenstackFalvorName() {
-        return this.flavorId;
+        return this.flavorName;
     }
 
     @NotNull
-    public Collection<? extends CloudInstance> getInstances() {
+    public Collection<? extends OpenstackCloudInstance> getInstances() {
         return Collections.unmodifiableCollection(instances.values());
     }
 
@@ -110,27 +113,13 @@ public class OpenstackCloudImage implements CloudImage {
 
     @NotNull
     public synchronized OpenstackCloudInstance startNewInstance(@NotNull final CloudInstanceUserData data) {
-        //check reusable instances
-        for (OpenstackCloudInstance instance : instances.values()) {
-            if (instance.getErrorInfo() == null && instance.getStatus() == InstanceStatus.STOPPED && instance.isRestartable()) {
-                instance.start(data);
-                return instance;
-            }
-        }
-
         final String instanceId = instanceIdGenerator.next();
-        final OpenstackCloudInstance instance = createInstance(instanceId);
+        final OpenstackCloudInstance instance = new OpenstackCloudInstance(this, instanceId, executor);
+
         instances.put(instanceId, instance);
         instance.start(data);
+
         return instance;
-    }
-
-    protected OpenstackCloudInstance createInstance(String instanceId) {
-        return new OpenstackCloudInstance(this, instanceId, executor);
-    }
-
-    void forgetInstance(@NotNull final OpenstackCloudInstance instance) {
-        instances.remove(instance.getInstanceId());
     }
 
     void dispose() {
@@ -138,5 +127,6 @@ public class OpenstackCloudImage implements CloudImage {
             instance.terminate();
         }
         instances.clear();
+        executor.shutdown();
     }
 }

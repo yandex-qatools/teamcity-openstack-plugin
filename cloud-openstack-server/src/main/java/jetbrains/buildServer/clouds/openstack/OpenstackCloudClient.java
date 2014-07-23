@@ -3,23 +3,19 @@ package jetbrains.buildServer.clouds.openstack;
 import jetbrains.buildServer.clouds.*;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
-import jetbrains.buildServer.util.NamedDeamonThreadFactory;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class OpenstackCloudClient extends BuildServerAdapter implements CloudClientEx {
     @NotNull private final List<OpenstackCloudImage> cloudImages = new ArrayList<OpenstackCloudImage>();
-    @NotNull private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(new NamedDeamonThreadFactory("openstack-cloud-image"));
     @NotNull private final OpenstackApi openstackApi;
     @Nullable private CloudErrorInfo errorInfo = null;
 
-    public OpenstackCloudClient(@NotNull final CloudClientParameters params) {
+    public OpenstackCloudClient(@NotNull final CloudClientParameters params, @NotNull final ExecutorServiceFactory factory) {
 
         final String endpointUrl = params.getParameter(OpenstackCloudParameters.ENDPOINT_URL).trim();
         final String identity = params.getParameter(OpenstackCloudParameters.IDENTITY).trim();
@@ -54,7 +50,15 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
                     .securityGroupNames(securityGroupName)
                     .networks(networkId);
 
-            final OpenstackCloudImage image = new OpenstackCloudImage(imageIdGenerator.next(), imageName, openstackApi, openstackImageName, flavorName, options, executor);
+            final OpenstackCloudImage image = new OpenstackCloudImage(
+                    imageIdGenerator.next(),
+                    imageName,
+                    openstackApi,
+                    openstackImageName,
+                    flavorName,
+                    options,
+                    factory.createExecutorService(imageName));
+
             cloudImages.add(image);
 
         }
@@ -132,7 +136,6 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     public void dispose() {
         for (final OpenstackCloudImage image : cloudImages) image.dispose();
         cloudImages.clear();
-        executor.shutdown();
     }
 
     @Nullable
