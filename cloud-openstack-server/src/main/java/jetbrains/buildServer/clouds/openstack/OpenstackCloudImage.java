@@ -21,7 +21,7 @@ public class OpenstackCloudImage implements CloudImage {
     @NotNull private final CreateServerOptions options;
     @NotNull private final ScheduledExecutorService executor;
 
-    @NotNull private final Map<String, OpenstackCloudInstance> instances = new ConcurrentHashMap<String, jetbrains.buildServer.clouds.openstack.OpenstackCloudInstance>();
+    @NotNull private final Map<String, OpenstackCloudInstance> instances = new ConcurrentHashMap<String, OpenstackCloudInstance>();
     @NotNull private final IdGenerator instanceIdGenerator = new IdGenerator();
     @Nullable private final CloudErrorInfo errorInfo;
     private boolean myIsReusable;
@@ -126,10 +126,7 @@ public class OpenstackCloudImage implements CloudImage {
     }
 
     protected OpenstackCloudInstance createInstance(String instanceId) {
-        if (isReusable()) {
-            return new ReStartableInstance(instanceId, this, executor);
-        }
-        return new OneUseOpenstackCloudInstance(instanceId, this, executor);
+        return new OpenstackCloudInstance(this, instanceId, executor);
     }
 
     void forgetInstance(@NotNull final OpenstackCloudInstance instance) {

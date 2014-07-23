@@ -23,7 +23,7 @@ import static jetbrains.buildServer.clouds.openstack.OpenstackCloudParameters.IM
 import static jetbrains.buildServer.clouds.openstack.OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME;
 
 
-public abstract class OpenstackCloudInstance implements CloudInstance {
+public class OpenstackCloudInstance implements CloudInstance {
     @NotNull private static final Logger LOG = Logger.getLogger(OpenstackCloudInstance.class);
     private static final int STATUS_WAITING_TIMEOUT = 30 * 1000;
 
@@ -41,11 +41,14 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
         this.instanceId = instanceId;
         this.startDate = new Date();
         this.executor = executor;
-
         setStatus(InstanceStatus.SCHEDULED_TO_START);
     }
 
-    public abstract boolean isRestartable();
+    public boolean isRestartable() {
+        return false;
+    }
+
+    public void cleanupStoppedInstance() {}
 
     @NotNull
     public InstanceStatus getStatus() {
@@ -127,8 +130,6 @@ public abstract class OpenstackCloudInstance implements CloudInstance {
             processError(e);
         }
     }
-
-    protected abstract void cleanupStoppedInstance();
 
     private void waitForStatus(@NotNull final InstanceStatus status) {
         new WaitFor(STATUS_WAITING_TIMEOUT) {
