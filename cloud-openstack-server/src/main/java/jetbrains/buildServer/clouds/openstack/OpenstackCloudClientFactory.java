@@ -9,6 +9,7 @@ import jetbrains.buildServer.serverSide.InvalidProperty;
 import jetbrains.buildServer.serverSide.PropertiesProcessor;
 import jetbrains.buildServer.util.NamedDeamonThreadFactory;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
+import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,6 +20,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class OpenstackCloudClientFactory implements CloudClientFactory {
+    @NotNull private static final Logger LOG = Logger.getLogger(OpenstackCloudClientFactory.class);
     @NotNull private final String cloudProfileSettings;
 
     public OpenstackCloudClientFactory(@NotNull final CloudRegistrar cloudRegistrar,
@@ -58,6 +60,9 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
     }
 
     public boolean canBeAgentOfType(@NotNull final AgentDescription agentDescription) {
+
+        LOG.warn("agentConfigurationParameters " + agentDescription.getConfigurationParameters());
+
         final Map<String, String> configParams = agentDescription.getConfigurationParameters();
         return configParams.containsKey(OpenstackCloudParameters.IMAGE_ID_PARAM_NAME) && configParams.containsKey(OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME);
     }
@@ -67,7 +72,7 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
         return new OpenstackCloudClient(params, new ExecutorServiceFactory() {
             @NotNull
             public ScheduledExecutorService createExecutorService(@NotNull final String duty) {
-                return Executors.newSingleThreadScheduledExecutor(new NamedDeamonThreadFactory("vmware-" + duty));
+                return Executors.newSingleThreadScheduledExecutor(new NamedDeamonThreadFactory("openstack-" + duty));
             }
         });
     }

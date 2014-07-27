@@ -72,7 +72,7 @@ public class OpenstackCloudInstance implements CloudInstance {
 
     @NotNull
     public String getName() {
-        return cloudImage.getName() + "-" + instanceId;
+        return OpenstackCloudClient.generateAgentName(cloudImage, instanceId);
     }
 
     @NotNull

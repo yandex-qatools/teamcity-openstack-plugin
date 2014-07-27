@@ -12,6 +12,7 @@ import org.jclouds.openstack.nova.v2_0.NovaApi;
 import org.jclouds.openstack.nova.v2_0.NovaApiMetadata;
 import org.jclouds.openstack.nova.v2_0.domain.Flavor;
 import org.jclouds.openstack.nova.v2_0.domain.Image;
+import org.jclouds.openstack.nova.v2_0.domain.Server;
 import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 
 import java.util.List;
@@ -67,6 +68,14 @@ public class OpenstackApi {
         List<? extends Flavor> flavors = novaApi.getFlavorApiForZone(zone).listInDetail().concat().toList();
         for (Flavor flavor: flavors) {
             if (flavor.getName().equals(name)) return flavor.getId();
+        }
+        return null;
+    }
+
+    public String getServerByName(String name) {
+        List<? extends Server> servers = novaApi.getServerApiForZone(zone).listInDetail().concat().toList();
+        for (Server server: servers) {
+            if (server.getName().equals(name)) return server.getId();
         }
         return null;
     }

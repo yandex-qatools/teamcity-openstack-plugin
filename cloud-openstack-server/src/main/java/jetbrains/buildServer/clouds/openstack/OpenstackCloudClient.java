@@ -3,6 +3,7 @@ package jetbrains.buildServer.clouds.openstack;
 import jetbrains.buildServer.clouds.*;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
+import org.apache.log4j.Logger;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -11,6 +12,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.util.*;
 
 public class OpenstackCloudClient extends BuildServerAdapter implements CloudClientEx {
+    @NotNull private static final Logger LOG = Logger.getLogger(OpenstackCloudClient.class); //TODO need to use this
     @NotNull private final List<OpenstackCloudImage> cloudImages = new ArrayList<OpenstackCloudImage>();
     @NotNull private final OpenstackApi openstackApi;
     @Nullable private CloudErrorInfo errorInfo = null;
@@ -82,6 +84,15 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
     @Nullable
     public OpenstackCloudInstance findInstanceByAgent(@NotNull final AgentDescription agentDescription) {
+        for (CloudImage image: getImages()) {
+            for (CloudInstance instance: image.getInstances()) {
+                if instance.getStatus();
+            }
+        }
+
+
+        LOG.warn("agentConfigurationParameters "+ agentDescription.getConfigurationParameters());
+
         final OpenstackCloudImage image = findImage(agentDescription);
         if (image == null) return null;
 
@@ -105,21 +116,6 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         return true;
     }
 
-    public String generateAgentName(@NotNull final AgentDescription agentDescription) {
-        final OpenstackCloudImage image = findImage(agentDescription);
-        if (image == null) return null;
-
-        final String instanceId = findInstanceId(agentDescription);
-        if (instanceId == null) return null;
-
-        return generateAgentName(image, instanceId);
-    }
-
-    @NotNull
-    public static String generateAgentName(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId) {
-        return OpenstackCloudParameters.CLOUD_TYPE + "-" + image.getName() + "-" + instanceId;
-    }
-
     @NotNull
     public CloudInstance startNewInstance(@NotNull final CloudImage image, @NotNull final CloudInstanceUserData data) throws QuotaException {
         return ((OpenstackCloudImage)image).startNewInstance(data);
@@ -133,11 +129,21 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         ((OpenstackCloudInstance)instance).terminate();
     }
 
-    public void dispose() {
-        for (final OpenstackCloudImage image : cloudImages) image.dispose();
-        cloudImages.clear();
+    @Nullable
+    public String generateAgentName(@NotNull final AgentDescription agentDescription) {
+        final OpenstackCloudImage image = findImage(agentDescription);
+        if (image == null) return null;
+
+        final String instanceId = findInstanceId(agentDescription);
+        if (instanceId == null) return null;
+
+        return generateAgentName(image, instanceId);
     }
 
+    @NotNull
+    public static String generateAgentName(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId) {
+        return image.getName() + "-" + instanceId;
+    }
     @Nullable
     private OpenstackCloudImage findImage(@NotNull final AgentDescription agentDescription) {
         final String imageId = agentDescription.getConfigurationParameters().get(OpenstackCloudParameters.IMAGE_ID_PARAM_NAME);
@@ -147,5 +153,10 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     @Nullable
     private String findInstanceId(@NotNull final AgentDescription agentDescription) {
         return agentDescription.getConfigurationParameters().get(OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME);
+    }
+
+    public void dispose() {
+        for (final OpenstackCloudImage image : cloudImages) image.dispose();
+        cloudImages.clear();
     }
 }
