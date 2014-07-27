@@ -28,7 +28,6 @@ public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
         URL url = new URL(sURL);
         HttpURLConnection request = (HttpURLConnection) url.openConnection();
         request.connect();
-
         JsonParser jp = new JsonParser();
         JsonElement root = jp.parse(new InputStreamReader((InputStream) request.getContent()));
         return root;
@@ -41,10 +40,16 @@ public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
         try {
             JsonElement json = readJsonFromUrl(metadataUrl);
             String uuid = json.getAsJsonObject().get("uuid").toString();
-            if (uuid != null && !uuid.trim().isEmpty()) {
-                uuid = uuid.replaceAll("^\"|\"$", "");  // trim leading and ending double quotes
+            String hostname = json.getAsJsonObject().get("hostname").toString();
+            if ((uuid != null && !uuid.trim().isEmpty()) && ((hostname != null && !hostname.trim().isEmpty())) ) { //TODO: prettify this shit
                 configuration.addConfigurationParameter("agent.cloud.type", OpenstackCloudParameters.CLOUD_TYPE);
+
+                uuid = uuid.replaceAll("^\"|\"$", "");  // trim leading and ending double quotes
                 configuration.addConfigurationParameter("agent.cloud.uuid", uuid);
+
+                hostname = hostname.replaceAll("^\"|\"$", "");
+                configuration.addSystemProperty("agent.name", hostname);
+                configuration.addConfigurationParameter("teamcity.agent.name", hostname);
             }
         } catch (IOException e) {
             LOG.error(e.getMessage());
