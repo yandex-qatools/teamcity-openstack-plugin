@@ -55,6 +55,11 @@ public class OpenstackCloudInstance implements CloudInstance {
         }
     }
 
+    @Nullable
+    public String getOpenstackInstanceId() {
+        return serverCreated != null ? serverCreated.getId() : null;
+    }
+
     @NotNull
     public InstanceStatus getStatus() {
         final CloudErrorInfo er = getErrorInfo();
@@ -72,7 +77,7 @@ public class OpenstackCloudInstance implements CloudInstance {
 
     @NotNull
     public String getName() {
-        return OpenstackCloudClient.generateAgentName(cloudImage, instanceId);
+        return cloudImage.getName() + "-" + instanceId;
     }
 
     @NotNull

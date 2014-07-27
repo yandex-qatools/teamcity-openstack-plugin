@@ -84,26 +84,23 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
     @Nullable
     public OpenstackCloudInstance findInstanceByAgent(@NotNull final AgentDescription agentDescription) {
-        for (CloudImage image: getImages()) {
-            for (CloudInstance instance: image.getInstances()) {
-                if instance.getStatus();
+        final Map<String, String> configParams = agentDescription.getConfigurationParameters();
+        if (!configParams.containsValue(OpenstackCloudParameters.CLOUD_TYPE)) return null;
+
+        for (OpenstackCloudImage image: getImages()) {
+            for (OpenstackCloudInstance instance: image.getInstances()) {
+                LOG.warn("my_instance: " + instance.getOpenstackInstanceId());
+                LOG.warn("os_instance: " + configParams.get("agent.cloud.uuid"));
+                if (instance.getOpenstackInstanceId().equals(configParams.get("agent.cloud.uuid"))) {
+                    return instance;
+                }
             }
         }
-
-
-        LOG.warn("agentConfigurationParameters "+ agentDescription.getConfigurationParameters());
-
-        final OpenstackCloudImage image = findImage(agentDescription);
-        if (image == null) return null;
-
-        final String instanceId = findInstanceId(agentDescription);
-        if (instanceId == null) return null;
-
-        return image.findInstanceById(instanceId);
+        return null;
     }
 
     @NotNull
-    public Collection<? extends CloudImage> getImages() throws CloudException {
+    public Collection<? extends OpenstackCloudImage> getImages() throws CloudException {
         return Collections.unmodifiableList(cloudImages);
     }
 
@@ -131,28 +128,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
     @Nullable
     public String generateAgentName(@NotNull final AgentDescription agentDescription) {
-        final OpenstackCloudImage image = findImage(agentDescription);
-        if (image == null) return null;
-
-        final String instanceId = findInstanceId(agentDescription);
-        if (instanceId == null) return null;
-
-        return generateAgentName(image, instanceId);
-    }
-
-    @NotNull
-    public static String generateAgentName(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId) {
-        return image.getName() + "-" + instanceId;
-    }
-    @Nullable
-    private OpenstackCloudImage findImage(@NotNull final AgentDescription agentDescription) {
-        final String imageId = agentDescription.getConfigurationParameters().get(OpenstackCloudParameters.IMAGE_ID_PARAM_NAME);
-        return imageId == null ? null : findImageById(imageId);
-    }
-
-    @Nullable
-    private String findInstanceId(@NotNull final AgentDescription agentDescription) {
-        return agentDescription.getConfigurationParameters().get(OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME);
+        return null;
     }
 
     public void dispose() {

@@ -60,11 +60,8 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
     }
 
     public boolean canBeAgentOfType(@NotNull final AgentDescription agentDescription) {
-
-        LOG.warn("agentConfigurationParameters " + agentDescription.getConfigurationParameters());
-
         final Map<String, String> configParams = agentDescription.getConfigurationParameters();
-        return configParams.containsKey(OpenstackCloudParameters.IMAGE_ID_PARAM_NAME) && configParams.containsKey(OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME);
+        return configParams.containsValue(OpenstackCloudParameters.CLOUD_TYPE);
     }
 
     @NotNull
@@ -77,4 +74,3 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
         });
     }
 }
-
