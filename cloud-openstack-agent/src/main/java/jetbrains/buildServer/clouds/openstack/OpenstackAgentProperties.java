@@ -29,8 +29,7 @@ public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
         HttpURLConnection request = (HttpURLConnection) url.openConnection();
         request.connect();
         JsonParser jp = new JsonParser();
-        JsonElement root = jp.parse(new InputStreamReader((InputStream) request.getContent()));
-        return root;
+        return jp.parse(new InputStreamReader((InputStream) request.getContent()));
     }
 
     @Override
@@ -40,16 +39,10 @@ public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
         try {
             JsonElement json = readJsonFromUrl(metadataUrl);
             String uuid = json.getAsJsonObject().get("uuid").toString();
-            String hostname = json.getAsJsonObject().get("hostname").toString();
-            if ((uuid != null && !uuid.trim().isEmpty()) && ((hostname != null && !hostname.trim().isEmpty())) ) { //TODO: prettify this shit
-                configuration.addConfigurationParameter("agent.cloud.type", OpenstackCloudParameters.CLOUD_TYPE);
-
+            if (uuid != null && !uuid.trim().isEmpty()) {
                 uuid = uuid.replaceAll("^\"|\"$", "");  // trim leading and ending double quotes
-                configuration.addConfigurationParameter("agent.cloud.uuid", uuid);
-
-                hostname = hostname.replaceAll("^\"|\"$", "");
-                configuration.addSystemProperty("agent.name", hostname);
-                configuration.addConfigurationParameter("teamcity.agent.name", hostname);
+                configuration.addConfigurationParameter("agent.cloud.type", OpenstackCloudParameters.CLOUD_TYPE);
+                configuration.addConfigurationParameter(OpenstackCloudParameters.OPENSTACK_INSTANCE_ID, uuid);
             }
         } catch (IOException e) {
             LOG.error(e.getMessage());

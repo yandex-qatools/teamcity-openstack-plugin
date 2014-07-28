@@ -89,9 +89,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
         for (OpenstackCloudImage image: getImages()) {
             for (OpenstackCloudInstance instance: image.getInstances()) {
-                LOG.warn("my_instance: " + instance.getOpenstackInstanceId());
-                LOG.warn("os_instance: " + configParams.get("agent.cloud.uuid"));
-                if (instance.getOpenstackInstanceId().equals(configParams.get("agent.cloud.uuid"))) {
+                if (instance.getOpenstackInstanceId().equals(configParams.get(OpenstackCloudParameters.OPENSTACK_INSTANCE_ID))) {
                     return instance;
                 }
             }

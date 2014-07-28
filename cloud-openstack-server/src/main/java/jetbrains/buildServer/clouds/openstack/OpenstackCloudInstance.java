@@ -17,9 +17,6 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static jetbrains.buildServer.clouds.openstack.OpenstackCloudParameters.IMAGE_ID_PARAM_NAME;
-import static jetbrains.buildServer.clouds.openstack.OpenstackCloudParameters.INSTANCE_ID_PARAM_NAME;
-
 
 public class OpenstackCloudInstance implements CloudInstance {
     @NotNull private static final Logger LOG = Logger.getLogger(OpenstackCloudInstance.class);
@@ -57,7 +54,7 @@ public class OpenstackCloudInstance implements CloudInstance {
 
     @Nullable
     public String getOpenstackInstanceId() {
-        return serverCreated != null ? serverCreated.getId() : null;
+        return serverCreated != null ? serverCreated.getId() : "";
     }
 
     @NotNull
@@ -106,8 +103,8 @@ public class OpenstackCloudInstance implements CloudInstance {
 
     public boolean containsAgent(@NotNull final AgentDescription agentDescription) {
         final Map<String, String> configParams = agentDescription.getConfigurationParameters();
-        return instanceId.equals(configParams.get(INSTANCE_ID_PARAM_NAME)) &&
-                getImageId().equals(configParams.get(IMAGE_ID_PARAM_NAME));
+        return configParams.containsValue(OpenstackCloudParameters.CLOUD_TYPE) &&
+                getOpenstackInstanceId().equals(configParams.get(OpenstackCloudParameters.OPENSTACK_INSTANCE_ID));
     }
 
     public void start(@NotNull final CloudInstanceUserData data) {
@@ -141,11 +138,11 @@ public class OpenstackCloudInstance implements CloudInstance {
         }
     }
 
-    private void waitForStatus(@NotNull final InstanceStatus status) {
+    private void waitForStatus(@NotNull final InstanceStatus st) {
         new WaitFor(STATUS_WAITING_TIMEOUT) {
             @Override
             protected boolean condition() {
-                return status == status;
+                return status.equals(st);
             }
         };
     }

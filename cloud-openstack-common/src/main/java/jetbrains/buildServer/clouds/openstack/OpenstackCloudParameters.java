@@ -12,6 +12,5 @@ public interface OpenstackCloudParameters {
 
     String IMAGES_PROFILE_SETTING = "clouds.openstack.images";
 
-    String IMAGE_ID_PARAM_NAME = "clouds.openstack.imageId";
-    String INSTANCE_ID_PARAM_NAME = "clouds.openstack.instanceId";
+    String OPENSTACK_INSTANCE_ID = "agent.cloud.uuid";
 }
