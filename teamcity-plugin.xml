@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<teamcity-plugin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:schemas-jetbrains-com:teamcity-plugin-v1-xml">
+  <info>
+    <name>cloud-openstack</name>
+    <display-name>cloud-openstack</display-name>
+    <version>@Version@</version>
+    <description>Plugin description</description>
+    <download-url>Plugin download URL</download-url>
+    <email>mavlyutov@yandex-team.ru</email>
+    <vendor>
+      <name>Yandex LLC</name>
+      <url>http://yandex.ru</url>
+      <logo>https://company.yandex.ru/i/yandex_eng_logo-240.png</logo>
+    </vendor>
+  </info>
+  <deployment use-separate-classloader="true" />
+</teamcity-plugin>
