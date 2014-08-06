@@ -25,12 +25,12 @@ public class OpenstackCloudImage implements CloudImage {
     @Nullable private final CloudErrorInfo errorInfo;
 
     public OpenstackCloudImage(@NotNull final String imageId,
-                           @NotNull final String imageName,
-                           @NotNull final OpenstackApi openstackApi,
-                           @NotNull final String openstackImageName,
-                           @NotNull final String flavorId,
-                           @NotNull final CreateServerOptions options,
-                           @NotNull final ScheduledExecutorService executor) {
+                               @NotNull final String imageName,
+                               @NotNull final OpenstackApi openstackApi,
+                               @NotNull final String openstackImageName,
+                               @NotNull final String flavorId,
+                               @NotNull final CreateServerOptions options,
+                               @NotNull final ScheduledExecutorService executor) {
         this.imageId = imageId;
         this.imageName = imageName;
         this.openstackApi = openstackApi;
