@@ -7,7 +7,8 @@
 
 ## Agent Configuration
 1. create one or more Openstack machines
-2. install a standard TeamCity build agent on them, you only need to fill TEAMCITY_SERVER_URL while installing TeamCity build agent 
+2. install a standard TeamCity build agent on them, you only need to fill TEAMCITY_SERVER_URL
+WARNING: you shouldn't start build agent while preparing image
 3. create images from machines with installed agent.
 
 ## Server Configuration
