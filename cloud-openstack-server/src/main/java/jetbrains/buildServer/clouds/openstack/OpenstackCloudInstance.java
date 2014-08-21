@@ -4,7 +4,8 @@ import jetbrains.buildServer.clouds.*;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.util.ExceptionUtil;
 import jetbrains.buildServer.util.WaitFor;
-import org.apache.log4j.Logger;
+import jetbrains.buildServer.log.Loggers;
+import com.intellij.openapi.diagnostic.Logger;
 import org.jclouds.openstack.nova.v2_0.domain.RebootType;
 import org.jclouds.openstack.nova.v2_0.domain.Server;
 import org.jclouds.openstack.nova.v2_0.domain.ServerCreated;
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 
 public class OpenstackCloudInstance implements CloudInstance {
-    @NotNull private static final Logger LOG = Logger.getLogger(OpenstackCloudInstance.class);
+    @NotNull private static final Logger LOG = Logger.getInstance(Loggers.CLOUD_CATEGORY_ROOT);
     private static final int STATUS_WAITING_TIMEOUT = 30 * 1000;
 
     @NotNull private final String instanceId;
@@ -114,6 +115,7 @@ public class OpenstackCloudInstance implements CloudInstance {
     }
 
     public void restart() {
+        LOG.debug(String.format("Restarting cloud openstack instance %s", getOpenstackInstanceId()));
         waitForStatus(InstanceStatus.RUNNING);
         setStatus(InstanceStatus.RESTARTING);
         try {
@@ -127,6 +129,7 @@ public class OpenstackCloudInstance implements CloudInstance {
     }
 
     public void terminate() {
+        LOG.debug(String.format("Terminating cloud openstack instance %s", getOpenstackInstanceId()));
         setStatus(InstanceStatus.SCHEDULED_TO_STOP);
         try {
             if (serverCreated != null) {
@@ -162,7 +165,9 @@ public class OpenstackCloudInstance implements CloudInstance {
                 String openstackImageId = cloudImage.getOpenstackImageId();
                 String flavorId = cloudImage.getFlavorId();
                 CreateServerOptions options = cloudImage.getImageOptions();
-
+                
+                LOG.debug(String.format("Creating openstack instance with flavorId=%s, imageId=%s", flavorId, openstackImageId));
+                
                 serverCreated = cloudImage.getNovaApi().create(getName(), openstackImageId, flavorId, options);
 
                 setStatus(InstanceStatus.STARTING);

@@ -2,11 +2,12 @@ package jetbrains.buildServer.clouds.openstack;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.intellij.openapi.diagnostic.Logger;
 import jetbrains.buildServer.agent.AgentLifeCycleAdapter;
 import jetbrains.buildServer.agent.BuildAgent;
 import jetbrains.buildServer.agent.BuildAgentConfiguration;
+import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.util.EventDispatcher;
-import org.apache.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -17,7 +18,7 @@ import java.net.URL;
 
 
 public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
-    @NotNull private static final Logger LOG = Logger.getLogger(OpenstackAgentProperties.class);
+    @NotNull private static final Logger LOG = Loggers.AGENT;
     @NotNull private final String metadataUrl = "http://169.254.169.254/openstack/latest/meta_data.json";
 
     public OpenstackAgentProperties(@NotNull EventDispatcher<AgentLifeCycleAdapter> dispatcher) {
@@ -40,11 +41,13 @@ public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
             JsonElement json = readJsonFromUrl(metadataUrl);
             String uuid = json.getAsJsonObject().get("uuid").toString();
             if (uuid != null && !uuid.trim().isEmpty()) {
+                LOG.debug(String.format("Detected Openstack instance. Will write parameters from metadata: %s", metadataUrl));
                 uuid = uuid.replaceAll("^\"|\"$", "");  // trim leading and ending double quotes
                 configuration.addConfigurationParameter("agent.cloud.type", OpenstackCloudParameters.CLOUD_TYPE);
                 configuration.addConfigurationParameter(OpenstackCloudParameters.OPENSTACK_INSTANCE_ID, uuid);
             }
         } catch (IOException e) {
+            LOG.debug("Agent launched at non-Openstack instance.");
             LOG.error(e.getMessage());
         }
 
