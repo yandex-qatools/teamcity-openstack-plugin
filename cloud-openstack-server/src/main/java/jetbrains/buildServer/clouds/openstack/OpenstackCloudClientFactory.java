@@ -4,12 +4,13 @@ import jetbrains.buildServer.clouds.CloudClientFactory;
 import jetbrains.buildServer.clouds.CloudClientParameters;
 import jetbrains.buildServer.clouds.CloudRegistrar;
 import jetbrains.buildServer.clouds.CloudState;
+import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.InvalidProperty;
 import jetbrains.buildServer.serverSide.PropertiesProcessor;
 import jetbrains.buildServer.util.NamedDeamonThreadFactory;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
-import org.apache.log4j.Logger;
+import com.intellij.openapi.diagnostic.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -20,7 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class OpenstackCloudClientFactory implements CloudClientFactory {
-    @NotNull private static final Logger LOG = Logger.getLogger(OpenstackCloudClientFactory.class);
+    @NotNull private static final Logger LOG = Logger.getInstance(Loggers.CLOUD_CATEGORY_ROOT);
     @NotNull private final String cloudProfileSettings;
 
     public OpenstackCloudClientFactory(@NotNull final CloudRegistrar cloudRegistrar,

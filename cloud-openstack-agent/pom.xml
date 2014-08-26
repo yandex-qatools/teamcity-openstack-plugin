@@ -13,15 +13,17 @@
         <dependency>
             <groupId>jetbrains.buildServer.clouds</groupId>
             <artifactId>cloud-openstack-common</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>compile</scope>
+            <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.jetbrains.teamcity</groupId>
             <artifactId>agent-api</artifactId>
-            <version>${teamcity-version}</version>
-            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.intellij</groupId>
+            <artifactId>openapi</artifactId>
         </dependency>
 
         <dependency>

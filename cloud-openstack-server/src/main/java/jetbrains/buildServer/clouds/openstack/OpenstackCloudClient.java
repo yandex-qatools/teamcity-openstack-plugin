@@ -1,9 +1,10 @@
 package jetbrains.buildServer.clouds.openstack;
 
 import jetbrains.buildServer.clouds.*;
+import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
-import org.apache.log4j.Logger;
+import com.intellij.openapi.diagnostic.Logger;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -12,7 +13,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.util.*;
 
 public class OpenstackCloudClient extends BuildServerAdapter implements CloudClientEx {
-    @NotNull private static final Logger LOG = Logger.getLogger(OpenstackCloudClient.class); //TODO need to use this
+    @NotNull private static final Logger LOG = Logger.getInstance(Loggers.CLOUD_CATEGORY_ROOT);
     @NotNull private final List<OpenstackCloudImage> cloudImages = new ArrayList<OpenstackCloudImage>();
     @NotNull private final OpenstackApi openstackApi;
     @Nullable private CloudErrorInfo errorInfo = null;
@@ -26,14 +27,16 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
         openstackApi = new OpenstackApi(endpointUrl, identity, password, zone);
 
-        final String raw_yaml = params.getParameter(OpenstackCloudParameters.IMAGES_PROFILE_SETTING);
-        if (raw_yaml == null || raw_yaml.trim().length() == 0) {
+        final String rawYaml = params.getParameter(OpenstackCloudParameters.IMAGES_PROFILE_SETTING);
+        LOG.debug(String.format("Using the following cloud parameters: endpointUrl=%s, identity=%s, zone=%s", endpointUrl, identity, zone));
+        if (rawYaml == null || rawYaml.trim().length() == 0) {
             errorInfo = new CloudErrorInfo("No images specified");
             return;
         }
+        LOG.debug(String.format("Using the following YAML data: %s", rawYaml));
 
         Yaml yaml = new Yaml();
-        final Map<String, Map> map = (Map) yaml.load(raw_yaml);
+        final Map<String, Map> map = (Map) yaml.load(rawYaml);
         final IdGenerator imageIdGenerator = new IdGenerator();
         final StringBuilder error = new StringBuilder();
 
@@ -51,6 +54,11 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
                     .keyPairName(keyPair)
                     .securityGroupNames(securityGroupName)
                     .networks(networkId);
+
+            LOG.debug(String.format(
+                    "Adding cloud image: imageName=%s, openstackImageName=%s, flavorName=%s, securityGroupName=%s, keyPair=%s, networkName=%s, networkId=%s",
+                    imageName, openstackImageName, flavorName, securityGroupName, keyPair, networkName, networkId
+            ));
 
             final OpenstackCloudImage image = new OpenstackCloudImage(
                     imageIdGenerator.next(),
