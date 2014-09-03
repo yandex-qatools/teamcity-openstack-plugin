@@ -1,12 +1,10 @@
 package jetbrains.buildServer.clouds.openstack;
 
+import com.intellij.openapi.diagnostic.Logger;
 import jetbrains.buildServer.clouds.*;
+import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.util.ExceptionUtil;
-import jetbrains.buildServer.util.WaitFor;
-import jetbrains.buildServer.log.Loggers;
-import com.intellij.openapi.diagnostic.Logger;
-import org.jclouds.openstack.nova.v2_0.domain.RebootType;
 import org.jclouds.openstack.nova.v2_0.domain.Server;
 import org.jclouds.openstack.nova.v2_0.domain.ServerCreated;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
@@ -21,8 +19,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class OpenstackCloudInstance implements CloudInstance {
     @NotNull private static final Logger LOG = Logger.getInstance(Loggers.CLOUD_CATEGORY_ROOT);
-    private static final int STATUS_WAITING_TIMEOUT = 30 * 1000;
-
     @NotNull private final String instanceId;
     @NotNull private final OpenstackCloudImage cloudImage;
     @NotNull private final Date startDate;
@@ -45,15 +41,31 @@ public class OpenstackCloudInstance implements CloudInstance {
             Server server = cloudImage.getNovaApi().get(serverCreated.getId());
             if (server != null) {
                 Server.Status currentStatus = server.getStatus();
-                if (currentStatus == Server.Status.ACTIVE) setStatus(InstanceStatus.RUNNING);
-                if (currentStatus == Server.Status.DELETED || currentStatus == Server.Status.SOFT_DELETED) setStatus(InstanceStatus.STOPPED);
+                LOG.debug(String.format("Getting instance status from openstack for %s, result is %s", getName(), currentStatus));
+                switch(currentStatus) {
+                    case ACTIVE:
+                        setStatus(InstanceStatus.RUNNING);
+                        break;
+                    case DELETED:
+                        setStatus(InstanceStatus.STOPPED);
+                        break;
+                    case SOFT_DELETED:
+                        setStatus(InstanceStatus.STOPPED);
+                        break;
+                    case ERROR:
+                        setStatus(InstanceStatus.ERROR);
+                        terminate();
+                        break;
+                }
             } else {
                 setStatus(InstanceStatus.STOPPED);
             }
+        } else {
+            LOG.debug(String.format("Will skip status updating cause instance is not created yet"));
         }
     }
 
-    @Nullable
+    @NotNull
     public String getOpenstackInstanceId() {
         return serverCreated != null ? serverCreated.getId() : "";
     }
@@ -109,27 +121,17 @@ public class OpenstackCloudInstance implements CloudInstance {
     }
 
     public void start(@NotNull final CloudInstanceUserData data) {
+        LOG.info(String.format("Starting cloud openstack instance %s", getName()));
         data.setAgentRemovePolicy(CloudConstants.AgentRemovePolicyValue.RemoveAgent);
-        setStatus(InstanceStatus.STARTING);
         executor.submit(ExceptionUtil.catchAll("start openstack cloud: " + this, new StartAgentCommand(data)));
     }
 
     public void restart() {
-        LOG.debug(String.format("Restarting cloud openstack instance %s", getOpenstackInstanceId()));
-        waitForStatus(InstanceStatus.RUNNING);
-        setStatus(InstanceStatus.RESTARTING);
-        try {
-            if (serverCreated != null) {
-                cloudImage.getNovaApi().reboot(serverCreated.getId(), RebootType.SOFT);
-                setStatus(InstanceStatus.RUNNING);
-            }
-        } catch (final Exception e) {
-            processError(e);
-        }
+        throw new UnsupportedOperationException("Restart openstack instance operation is not supported yet" );
     }
 
     public void terminate() {
-        LOG.debug(String.format("Terminating cloud openstack instance %s", getOpenstackInstanceId()));
+        LOG.info(String.format("Terminating cloud openstack instance %s", getName()));
         setStatus(InstanceStatus.SCHEDULED_TO_STOP);
         try {
             if (serverCreated != null) {
@@ -139,15 +141,6 @@ public class OpenstackCloudInstance implements CloudInstance {
         } catch (final Exception e) {
             processError(e);
         }
-    }
-
-    private void waitForStatus(@NotNull final InstanceStatus st) {
-        new WaitFor(STATUS_WAITING_TIMEOUT) {
-            @Override
-            protected boolean condition() {
-                return status.equals(st);
-            }
-        };
     }
 
     private void processError(@NotNull final Exception e) {

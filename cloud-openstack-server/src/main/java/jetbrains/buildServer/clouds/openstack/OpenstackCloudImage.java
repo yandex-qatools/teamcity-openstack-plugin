@@ -46,7 +46,7 @@ public class OpenstackCloudImage implements CloudImage {
                 final Collection<OpenstackCloudInstance> instances = (Collection<OpenstackCloudInstance>) getInstances();
                 for (OpenstackCloudInstance instance : instances) {
                     instance.updateStatus();
-                    if (instance.getStatus() == InstanceStatus.STOPPED) forgetInstance(instance);
+                    if (instance.getStatus() == InstanceStatus.STOPPED || instance.getStatus() == InstanceStatus.ERROR) forgetInstance(instance);
                 }
             }
         }, 3, 3, TimeUnit.SECONDS);
