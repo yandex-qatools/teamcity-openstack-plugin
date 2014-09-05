@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class IdGenerator {
-    private final AtomicInteger myNextId = new AtomicInteger(7);
+    private final AtomicInteger myNextId = new AtomicInteger();
 
     @NotNull
     public String next() {
