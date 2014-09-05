@@ -77,6 +77,7 @@ public class OpenstackCloudInstance implements CloudInstance {
     }
 
     public void setStatus(@NotNull InstanceStatus status) {
+        LOG.debug(String.format("Changing %s status from %s to %s ", getName(), this.status, status));
         this.status.set(status);
     }
 
@@ -135,6 +136,7 @@ public class OpenstackCloudInstance implements CloudInstance {
         setStatus(InstanceStatus.SCHEDULED_TO_STOP);
         try {
             if (serverCreated != null) {
+                cloudImage.getNovaApi().stop(serverCreated.getId());
                 cloudImage.getNovaApi().delete(serverCreated.getId());
                 setStatus(InstanceStatus.STOPPING);
             }
@@ -151,16 +153,19 @@ public class OpenstackCloudInstance implements CloudInstance {
     }
 
     private class StartAgentCommand implements Runnable {
-        public StartAgentCommand(@NotNull final CloudInstanceUserData data) {}
+        private final CloudInstanceUserData userData;
+        public StartAgentCommand(@NotNull final CloudInstanceUserData data) {
+            this.userData = data;
+        }
 
         public void run() {
             try {
                 String openstackImageId = cloudImage.getOpenstackImageId();
                 String flavorId = cloudImage.getFlavorId();
                 CreateServerOptions options = cloudImage.getImageOptions();
-                
-                LOG.debug(String.format("Creating openstack instance with flavorId=%s, imageId=%s", flavorId, openstackImageId));
-                
+                options.userData(userData.serialize().getBytes());
+
+                LOG.debug(String.format("Creating openstack instance with flavorId=%s, imageId=%s, options=%s", flavorId, openstackImageId, options));
                 serverCreated = cloudImage.getNovaApi().create(getName(), openstackImageId, flavorId, options);
 
                 setStatus(InstanceStatus.STARTING);

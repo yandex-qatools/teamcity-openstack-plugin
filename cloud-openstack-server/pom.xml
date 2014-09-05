@@ -65,6 +65,7 @@
         <dependency>
             <groupId>jetbrains.buildServer.clouds</groupId>
             <artifactId>cloud-shared</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>jetbrains.buildServer.clouds</groupId>

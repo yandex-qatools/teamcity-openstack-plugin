@@ -31,7 +31,7 @@
   </build>
   <dependencyManagement>
       <dependencies>
-          <!-- these are bundled with teamcity -->
+          <!-- these are opensourced teamcity dependencies-->
           <dependency>
               <groupId>com.intellij</groupId>
               <artifactId>openapi</artifactId>
@@ -50,13 +50,14 @@
               <version>${teamcity.version}</version>
               <scope>provided</scope>
           </dependency>
-          
-          <!-- Cloud API -->
+
+          <!-- these are bundled with teamcity -->
+          <!-- to install 'em run this command using each dependency -->
+          <!-- mvn install:install-file -Dfile=PATH_TO_TEAMCITY/DEPENDENCY.jar -DgroupId=jetbrains.buildServer.* -DartifactId=* -Dversion=${teamcity.version} -Dpackaging=jar -->
           <dependency>
               <groupId>jetbrains.buildServer.clouds</groupId>
               <artifactId>cloud-shared</artifactId>
               <version>${teamcity.version}</version>
-              <scope>provided</scope>
           </dependency>
           <dependency>
               <groupId>jetbrains.buildServer.clouds</groupId>
@@ -64,6 +65,13 @@
               <version>${teamcity.version}</version>
               <scope>provided</scope>
           </dependency>
+          <dependency>
+              <groupId>jetbrains.buildServer.agent</groupId>
+              <artifactId>agent</artifactId>
+              <version>${teamcity.version}</version>
+              <scope>provided</scope>
+          </dependency>
+
       </dependencies>
   </dependencyManagement>
   <modules>
