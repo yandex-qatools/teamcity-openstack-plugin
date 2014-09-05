@@ -30,7 +30,7 @@
     </td>
 </tr>
 
-<c:set var="paramName" value="<%=OpenstackCloudParameters.IMAGES_PROFILE_SETTING%>"/>
+<c:set var="paramName" value="<%=OpenstackCloudParameters.IMAGES_PROFILES%>"/>
 <tr>
     <th><label for="${paramName}">Agent images:</label></th>
     <td>
