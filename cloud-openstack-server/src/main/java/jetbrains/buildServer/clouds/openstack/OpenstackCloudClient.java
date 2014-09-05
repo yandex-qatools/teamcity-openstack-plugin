@@ -27,7 +27,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
         openstackApi = new OpenstackApi(endpointUrl, identity, password, zone);
 
-        final String rawYaml = params.getParameter(OpenstackCloudParameters.IMAGES_PROFILE_SETTING);
+        final String rawYaml = params.getParameter(OpenstackCloudParameters.IMAGES_PROFILES);
         LOG.debug(String.format("Using the following cloud parameters: endpointUrl=%s, identity=%s, zone=%s", endpointUrl, identity, zone));
         if (rawYaml == null || rawYaml.trim().length() == 0) {
             errorInfo = new CloudErrorInfo("No images specified");

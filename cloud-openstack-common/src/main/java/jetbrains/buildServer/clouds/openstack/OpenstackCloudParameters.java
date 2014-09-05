@@ -9,8 +9,8 @@ public interface OpenstackCloudParameters {
     String IDENTITY = "clouds.openstack.identity";
     String PASSWORD = "clouds.openstack.password";
     String ZONE = "clouds.openstack.zone";
-
-    String IMAGES_PROFILE_SETTING = "clouds.openstack.images";
+    String IMAGES_PROFILES = "clouds.openstack.images";
 
     String OPENSTACK_INSTANCE_ID = "agent.cloud.uuid";
+    String AGENT_CLOUD_TYPE = "agent.cloud.type";
 }
