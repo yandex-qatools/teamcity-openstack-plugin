@@ -1,9 +1,9 @@
 # TeamCity Cloud Openstack plugin
 
 ## Installation
-1. clone current repository
+1. clone current repository to your local computer
 2. run "mvn clean package"
-3. install resulted *.zip file to your teamcity server
+3. install resulted *.zip file to teamcity server
 
 ## Agent Configuration
 1. create one or more Openstack machines
