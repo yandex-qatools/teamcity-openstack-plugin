@@ -78,7 +78,6 @@ public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
         } finally {
             IOUtils.closeQuietly(in);
         }
-
         return data.trim();
     }
 
