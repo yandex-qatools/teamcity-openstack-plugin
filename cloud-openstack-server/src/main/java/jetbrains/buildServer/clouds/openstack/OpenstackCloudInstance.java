@@ -136,7 +136,6 @@ public class OpenstackCloudInstance implements CloudInstance {
         setStatus(InstanceStatus.SCHEDULED_TO_STOP);
         try {
             if (serverCreated != null) {
-                cloudImage.getNovaApi().stop(serverCreated.getId());
                 cloudImage.getNovaApi().delete(serverCreated.getId());
                 setStatus(InstanceStatus.STOPPING);
             }
