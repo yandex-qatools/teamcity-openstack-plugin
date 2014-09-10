@@ -4,7 +4,7 @@
     <name>cloud-openstack</name>
     <display-name>cloud-openstack</display-name>
     <version>@Version@</version>
-    <description>Plugin description</description>
+    <description>Cloud Openstack Integration for TeamCity</description>
     <download-url>Plugin download URL</download-url>
     <email>mavlyutov@yandex-team.ru</email>
     <vendor>
