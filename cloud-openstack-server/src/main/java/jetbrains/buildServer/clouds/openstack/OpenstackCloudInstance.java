@@ -47,15 +47,21 @@ public class OpenstackCloudInstance implements CloudInstance {
                     case ACTIVE:
                         setStatus(InstanceStatus.RUNNING);
                         break;
-                    case DELETED:
-                        setStatus(InstanceStatus.STOPPED);
-                        break;
-                    case SOFT_DELETED:
-                        setStatus(InstanceStatus.STOPPED);
-                        break;
                     case ERROR:
                         setStatus(InstanceStatus.ERROR);
                         terminate();
+                        break;
+                    case SUSPENDED:
+                    case PAUSED:
+                    case DELETED:
+                    case SOFT_DELETED:
+                    case UNKNOWN:
+                    case UNRECOGNIZED:
+                    case SHUTOFF:
+                    case SHELVED:
+                    case SHELVED_OFFLOADED:
+                    case STOPPED:
+                        setStatus(InstanceStatus.STOPPED);
                         break;
                 }
             } else {
