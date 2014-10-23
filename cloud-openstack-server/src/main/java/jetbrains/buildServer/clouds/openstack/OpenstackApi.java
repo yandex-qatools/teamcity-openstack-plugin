@@ -5,14 +5,13 @@ import org.jclouds.ContextBuilder;
 import org.jclouds.location.reference.LocationConstants;
 import org.jclouds.openstack.keystone.v2_0.config.CredentialTypes;
 import org.jclouds.openstack.keystone.v2_0.config.KeystoneProperties;
-import org.jclouds.openstack.neutron.v2_0.NeutronApi;
-import org.jclouds.openstack.neutron.v2_0.NeutronApiMetadata;
-import org.jclouds.openstack.neutron.v2_0.domain.Network;
+import org.jclouds.openstack.neutron.v2.NeutronApi;
+import org.jclouds.openstack.neutron.v2.NeutronApiMetadata;
+import org.jclouds.openstack.neutron.v2.domain.Network;
 import org.jclouds.openstack.nova.v2_0.NovaApi;
 import org.jclouds.openstack.nova.v2_0.NovaApiMetadata;
 import org.jclouds.openstack.nova.v2_0.domain.Flavor;
 import org.jclouds.openstack.nova.v2_0.domain.Image;
-import org.jclouds.openstack.nova.v2_0.domain.Server;
 import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 
 import java.util.List;
@@ -72,16 +71,8 @@ public class OpenstackApi {
         return null;
     }
 
-    public String getServerByName(String name) {
-        List<? extends Server> servers = novaApi.getServerApiForZone(zone).listInDetail().concat().toList();
-        for (Server server: servers) {
-            if (server.getName().equals(name)) return server.getId();
-        }
-        return null;
-    }
-
     public String getNetworkIdByName(String name) {
-        List<? extends Network> networks = neutronApi.getNetworkApiForZone(zone).listInDetail().concat().toList();
+        List<? extends Network> networks = neutronApi.getNetworkApi(zone).list().concat().toList();
         for (Network network: networks) {
             if (network.getName().equals(name)) return network.getId();
         }

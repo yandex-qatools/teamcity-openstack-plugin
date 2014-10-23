@@ -6,8 +6,8 @@
   <version>1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <properties>
-      <teamcity.version>8.0</teamcity.version>
-      <jclouds.version>1.7.3</jclouds.version>
+      <teamcity.version>8.1</teamcity.version>
+      <jclouds.version>1.8.0</jclouds.version>
   </properties>
   <repositories>
     <repository>
@@ -53,7 +53,7 @@
 
           <!-- these are bundled with teamcity -->
           <!-- to install 'em run this command using each dependency -->
-          <!-- mvn install:install-file -Dfile=PATH_TO_TEAMCITY/DEPENDENCY.jar -DgroupId=jetbrains.buildServer.* -DartifactId=* -Dversion=${teamcity.version} -Dpackaging=jar -->
+          <!-- mvn install:install-file -Dfile=PATH_TO_TEAMCITY/webapps/ROOT/WEB-INF/lib/DEPENDENCY.jar -DgroupId=jetbrains.buildServer.* -DartifactId=* -Dversion=${teamcity.version} -Dpackaging=jar -->
           <dependency>
               <groupId>jetbrains.buildServer.clouds</groupId>
               <artifactId>cloud-shared</artifactId>
