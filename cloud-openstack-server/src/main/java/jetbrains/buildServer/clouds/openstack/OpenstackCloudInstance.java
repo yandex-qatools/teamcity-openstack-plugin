@@ -11,7 +11,6 @@ import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -168,7 +167,7 @@ public class OpenstackCloudInstance implements CloudInstance {
                 String openstackImageId = cloudImage.getOpenstackImageId();
                 String flavorId = cloudImage.getFlavorId();
                 CreateServerOptions options = cloudImage.getImageOptions();
-                options.userData(userData.serialize().getBytes(StandardCharsets.UTF_8));
+                options.metadata(userData.getCustomAgentConfigurationParameters());
 
                 LOG.debug(String.format("Creating openstack instance with flavorId=%s, imageId=%s, options=%s", flavorId, openstackImageId, options));
                 serverCreated = cloudImage.getNovaApi().create(getName(), openstackImageId, flavorId, options);

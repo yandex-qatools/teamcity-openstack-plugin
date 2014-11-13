@@ -1,29 +1,31 @@
 package jetbrains.buildServer.clouds.openstack;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.google.gson.reflect.TypeToken;
 import com.intellij.openapi.diagnostic.Logger;
 import jetbrains.buildServer.agent.AgentLifeCycleAdapter;
 import jetbrains.buildServer.agent.BuildAgent;
 import jetbrains.buildServer.agent.BuildAgentConfigurationEx;
-import jetbrains.buildServer.clouds.CloudInstanceUserData;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.util.EventDispatcher;
-import jetbrains.buildServer.util.StringUtil;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+
+import java.util.HashMap;
 import java.util.Map;
 
 
 public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
     @NotNull private static final Logger LOG = Loggers.AGENT;
     @NotNull private final String metadataUrl = "http://169.254.169.254/openstack/latest/meta_data.json";
-    @NotNull private final String userDataUrl = "http://169.254.169.254/openstack/latest/user_data";
     @NotNull private final BuildAgentConfigurationEx agentConfiguration;
 
     public OpenstackAgentProperties(@NotNull final BuildAgentConfigurationEx agentConfiguration, @NotNull EventDispatcher<AgentLifeCycleAdapter> dispatcher) {
@@ -34,36 +36,33 @@ public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
     @Override
     public void afterAgentConfigurationLoaded(@NotNull BuildAgent agent) {
         try {
-            String metadata = readDataFromUrl(metadataUrl);
+            String rawMetadata = readDataFromUrl(metadataUrl);
             LOG.info(String.format("Detected Openstack instance. Will write parameters from metadata: %s", metadataUrl));
 
-            // fill metadata parameters
-            String uuid = getParameterFromJson(metadata, "uuid");
+            JsonElement metadataElement = new JsonParser().parse(rawMetadata);
+
+            String uuid = metadataElement.getAsJsonObject().get("uuid").getAsString();
             if (uuid != null) {
                 LOG.info(String.format("Setting %s to %s", OpenstackCloudParameters.OPENSTACK_INSTANCE_ID, uuid));
                 agentConfiguration.addConfigurationParameter(OpenstackCloudParameters.OPENSTACK_INSTANCE_ID, uuid);
             }
 
-            String name = getParameterFromJson(metadata, "name");
+            String name = metadataElement.getAsJsonObject().get("name").getAsString();
             if (name != null) {
                 LOG.info(String.format("Setting name to %s", name));
                 agentConfiguration.setName(name);
             }
 
+            JsonElement teamCityUserData = metadataElement.getAsJsonObject().get("meta");
+            Type type = new TypeToken<HashMap<String, String>>() {}.getType();
+            HashMap<String,String> customParameters = new Gson().fromJson(teamCityUserData, type);
+            for (Map.Entry<String, String> entry : customParameters.entrySet()) {
+                agentConfiguration.addConfigurationParameter(entry.getKey(), entry.getValue());
+            }
+
             LOG.info(String.format("Setting %s to %s", OpenstackCloudParameters.AGENT_CLOUD_TYPE, OpenstackCloudParameters.CLOUD_TYPE));
             agentConfiguration.addConfigurationParameter(OpenstackCloudParameters.AGENT_CLOUD_TYPE, OpenstackCloudParameters.CLOUD_TYPE);
 
-            // fill userdata parameters
-            String userData = readDataFromUrl(userDataUrl);
-            if (!StringUtil.isEmpty(userData)) {
-                final CloudInstanceUserData cloudUserData = CloudInstanceUserData.deserialize(userData);
-                if (cloudUserData != null) {
-                    final Map<String, String> customParameters = cloudUserData.getCustomAgentConfigurationParameters();
-                    for (Map.Entry<String, String> entry : customParameters.entrySet()) {
-                        agentConfiguration.addConfigurationParameter(entry.getKey(), entry.getValue());
-                    }
-                }
-            }
         } catch (Exception e) {
             LOG.info("It seems build-agent launched at non-Openstack instance.");
             LOG.error(e.getMessage());
@@ -79,15 +78,6 @@ public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
             IOUtils.closeQuietly(in);
         }
         return data.trim();
-    }
-
-    private static String getParameterFromJson(String rawJson, String parameterName) {
-        JsonElement jp = new JsonParser().parse(rawJson);
-        String parameter = jp.getAsJsonObject().get(parameterName).toString();
-        if (!StringUtil.isEmpty(parameter)) {
-            parameter = parameter.replaceAll("^\"|\"$", "");  // trim leading and ending double quotes
-        }
-        return parameter;
     }
 
 }

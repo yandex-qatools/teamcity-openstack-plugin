@@ -37,10 +37,5 @@
             <version>2.2.4</version>
         </dependency>
 
-        <dependency>
-            <groupId>jetbrains.buildServer.clouds</groupId>
-            <artifactId>cloud-shared</artifactId>
-        </dependency>
-
     </dependencies>
 </project>
