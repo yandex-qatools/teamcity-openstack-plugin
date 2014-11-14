@@ -1,16 +1,23 @@
 package jetbrains.buildServer.clouds.openstack;
 
+import com.google.common.base.Strings;
 import com.intellij.openapi.diagnostic.Logger;
 import jetbrains.buildServer.clouds.*;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.AgentDescription;
+import jetbrains.buildServer.serverSide.ServerPaths;
+import jetbrains.buildServer.serverSide.TeamCityServerProperties;
 import jetbrains.buildServer.util.ExceptionUtil;
+import jetbrains.buildServer.util.FileUtil;
 import org.jclouds.openstack.nova.v2_0.domain.Server;
 import org.jclouds.openstack.nova.v2_0.domain.ServerCreated;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -168,6 +175,24 @@ public class OpenstackCloudInstance implements CloudInstance {
                 String flavorId = cloudImage.getFlavorId();
                 CreateServerOptions options = cloudImage.getImageOptions();
                 options.metadata(userData.getCustomAgentConfigurationParameters());
+
+                // TODO: that code should be in OpenstackCloudImage
+                // but as we make it possible to change userScript
+                // without touching teamcity, that hack takes place
+                // sorry
+                String userScriptPath = cloudImage.getUserScriptPath();
+                if (!Strings.isNullOrEmpty(userScriptPath)) {
+                    String teamcityPath = TeamCityServerProperties.getDataPath();
+                    File pluginData = new ServerPaths(teamcityPath).getPluginDataDirectory();
+                    File userScriptFile = new File(new File(pluginData, OpenstackCloudParameters.PLUGIN_SHORT_NAME), userScriptPath);
+                    try {
+                        String userScript = FileUtil.readText(userScriptFile);
+                        options.userData(userScript.trim().getBytes(StandardCharsets.UTF_8)) // this is userScript actually, but CreateServerOptions calls it userData
+                                .configDrive(true);
+                    } catch (IOException e) {
+                        LOG.error(e.getMessage());
+                    }
+                }
 
                 LOG.debug(String.format("Creating openstack instance with flavorId=%s, imageId=%s, options=%s", flavorId, openstackImageId, options));
                 serverCreated = cloudImage.getNovaApi().create(getName(), openstackImageId, flavorId, options);

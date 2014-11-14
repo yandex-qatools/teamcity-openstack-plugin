@@ -4,6 +4,7 @@ package jetbrains.buildServer.clouds.openstack;
 public interface OpenstackCloudParameters {
     String CLOUD_TYPE = "NOVA";  //that should be equal or less than 6 symbols, thanks for brainfuck debugging jetbrains guys!
     String CLOUD_DISPLAY_NAME = "Openstack Cloud";
+    String PLUGIN_SHORT_NAME = "openstack";
 
     String ENDPOINT_URL = "clouds.openstack.endpointUrl";
     String IDENTITY = "clouds.openstack.identity";

@@ -18,6 +18,7 @@ public class OpenstackCloudImage implements CloudImage {
     @NotNull private final String flavorName;
     @NotNull private final OpenstackApi openstackApi;
     @NotNull private final CreateServerOptions options;
+    @Nullable private final String userScriptPath;
     @NotNull private final ScheduledExecutorService executor;
 
     @NotNull private final Map<String, OpenstackCloudInstance> instances = new ConcurrentHashMap<String, OpenstackCloudInstance>();
@@ -30,6 +31,7 @@ public class OpenstackCloudImage implements CloudImage {
                                @NotNull final String openstackImageName,
                                @NotNull final String flavorId,
                                @NotNull final CreateServerOptions options,
+                               @Nullable final String userScriptPath,
                                @NotNull final ScheduledExecutorService executor) {
         this.imageId = imageId;
         this.imageName = imageName;
@@ -37,6 +39,7 @@ public class OpenstackCloudImage implements CloudImage {
         this.openstackImageName = openstackImageName;
         this.flavorName = flavorId;
         this.options = options;
+        this.userScriptPath = userScriptPath;
         this.executor = executor;
 
         this.errorInfo = null;  //FIXME
@@ -94,6 +97,11 @@ public class OpenstackCloudImage implements CloudImage {
     @NotNull
     public String getOpenstackFalvorName() {
         return this.flavorName;
+    }
+
+    @Nullable
+    public String getUserScriptPath() {
+        return userScriptPath;
     }
 
     @NotNull

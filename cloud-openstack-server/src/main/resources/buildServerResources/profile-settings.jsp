@@ -43,6 +43,10 @@
       &nbsp;&nbsp;&nbsp;&nbsp;network: my_openstack_network<br/>
       &nbsp;&nbsp;&nbsp;&nbsp;security_group: default<br/>
       &nbsp;&nbsp;&nbsp;&nbsp;key_pair: my_username_keypair<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;*user_script: my_startup_script.sh<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;*availability_zone: my_zone<br/>
+      starred parameters are optional<br/>
+      user_script should be located at teamcity server in directopy TEAMCITY_DATA_PATH/server/pluginData/openstack
     </span>
     </td>
 </tr>

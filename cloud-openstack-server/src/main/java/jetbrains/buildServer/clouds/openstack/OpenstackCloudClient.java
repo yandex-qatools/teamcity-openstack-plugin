@@ -1,5 +1,6 @@
 package jetbrains.buildServer.clouds.openstack;
 
+import com.google.common.base.Strings;
 import jetbrains.buildServer.clouds.*;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.AgentDescription;
@@ -48,6 +49,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
             final String securityGroupName = entry.getValue().get("security_group").toString().trim();
             final String keyPair = entry.getValue().get("key_pair").toString().trim();
             final String networkName = entry.getValue().get("network").toString().trim();
+            final String userScriptPath = (String) entry.getValue().get("user_script");
 
             String networkId = openstackApi.getNetworkIdByName(networkName);
             CreateServerOptions options = new CreateServerOptions()
@@ -55,9 +57,14 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
                     .securityGroupNames(securityGroupName)
                     .networks(networkId);
 
+            final String availabilityZone = (String) entry.getValue().get("availability_zone");
+            if (!Strings.isNullOrEmpty(availabilityZone)) {
+                options.availabilityZone(availabilityZone.trim());
+            }
+
             LOG.debug(String.format(
-                    "Adding cloud image: imageName=%s, openstackImageName=%s, flavorName=%s, securityGroupName=%s, keyPair=%s, networkName=%s, networkId=%s",
-                    imageName, openstackImageName, flavorName, securityGroupName, keyPair, networkName, networkId
+                "Adding cloud image: imageName=%s, openstackImageName=%s, flavorName=%s, securityGroupName=%s, keyPair=%s, networkName=%s, networkId=%s",
+                imageName, openstackImageName, flavorName, securityGroupName, keyPair, networkName, networkId
             ));
 
             final OpenstackCloudImage image = new OpenstackCloudImage(
@@ -67,6 +74,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
                     openstackImageName,
                     flavorName,
                     options,
+                    userScriptPath,
                     factory.createExecutorService(imageName));
 
             cloudImages.add(image);
