@@ -18,18 +18,20 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     @NotNull private final List<OpenstackCloudImage> cloudImages = new ArrayList<OpenstackCloudImage>();
     @NotNull private final OpenstackApi openstackApi;
     @Nullable private CloudErrorInfo errorInfo = null;
+    @Nullable private final Integer instanceCap;
 
     public OpenstackCloudClient(@NotNull final CloudClientParameters params, @NotNull final ExecutorServiceFactory factory) {
 
         final String endpointUrl = params.getParameter(OpenstackCloudParameters.ENDPOINT_URL).trim();
         final String identity = params.getParameter(OpenstackCloudParameters.IDENTITY).trim();
         final String password = params.getParameter(OpenstackCloudParameters.PASSWORD).trim();
-        final String zone = params.getParameter(OpenstackCloudParameters.ZONE).trim();
+        final String region = params.getParameter(OpenstackCloudParameters.REGION).trim();
 
-        openstackApi = new OpenstackApi(endpointUrl, identity, password, zone);
+        instanceCap = Integer.parseInt(params.getParameter(OpenstackCloudParameters.INSTANCE_CAP));
+        openstackApi = new OpenstackApi(endpointUrl, identity, password, region);
 
         final String rawYaml = params.getParameter(OpenstackCloudParameters.IMAGES_PROFILES);
-        LOG.debug(String.format("Using the following cloud parameters: endpointUrl=%s, identity=%s, zone=%s", endpointUrl, identity, zone));
+        LOG.debug(String.format("Using the following cloud parameters: endpointUrl=%s, identity=%s, zone=%s", endpointUrl, identity, region));
         if (rawYaml == null || rawYaml.trim().length() == 0) {
             errorInfo = new CloudErrorInfo("No images specified");
             return;
@@ -90,7 +92,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
     @Nullable
     public OpenstackCloudImage findImageById(@NotNull final String imageId) throws CloudException {
-        for (final OpenstackCloudImage image : cloudImages) {
+        for (final OpenstackCloudImage image : getImages()) {
             if (image.getId().equals(imageId)) {
                 return image;
             }
@@ -124,7 +126,15 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     }
 
     public boolean canStartNewInstance(@NotNull final CloudImage image) {
-        return true;
+        if (instanceCap == null) {
+            return true;
+        } else {
+            int i = 0;
+            for (final OpenstackCloudImage img : getImages()) {
+                i += img.getInstances().size();
+            }
+            return i < instanceCap;
+        }
     }
 
     @NotNull
@@ -146,7 +156,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     }
 
     public void dispose() {
-        for (final OpenstackCloudImage image : cloudImages) image.dispose();
+        for (final OpenstackCloudImage image : getImages()) image.dispose();
         cloudImages.clear();
     }
 }

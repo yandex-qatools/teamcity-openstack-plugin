@@ -9,7 +9,9 @@ public interface OpenstackCloudParameters {
     String ENDPOINT_URL = "clouds.openstack.endpointUrl";
     String IDENTITY = "clouds.openstack.identity";
     String PASSWORD = "clouds.openstack.password";
-    String ZONE = "clouds.openstack.zone";
+    String REGION = "clouds.openstack.zone";
+    String INSTANCE_CAP = "clouds.openstack.instanceCap";
+
     String IMAGES_PROFILES = "clouds.openstack.images";
 
     String OPENSTACK_INSTANCE_ID = "agent.cloud.uuid";

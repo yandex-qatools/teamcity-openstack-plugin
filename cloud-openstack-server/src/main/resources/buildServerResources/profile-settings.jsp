@@ -9,10 +9,10 @@
     </td>
 </tr>
 
-<c:set var="paramUsername" value="<%=OpenstackCloudParameters.IDENTITY%>"/>
+<c:set var="paramIdentity" value="<%=OpenstackCloudParameters.IDENTITY%>"/>
 <tr>
-    <th><label for="${paramUsername}">Identity: <l:star/></label></th>
-    <td><props:textProperty name="${paramUsername}" className="longField"/>
+    <th><label for="${paramIdentity}">Identity: <l:star/></label></th>
+    <td><props:textProperty name="${paramIdentity}" className="longField"/>
     </td>
 </tr>
 
@@ -23,10 +23,17 @@
     </td>
 </tr>
 
-<c:set var="paramZone" value="<%=OpenstackCloudParameters.ZONE%>"/>
+<c:set var="paramRegion" value="<%=OpenstackCloudParameters.REGION%>"/>
 <tr>
-    <th><label for="${paramZone}">Region: <l:star/></label></th>
-    <td><props:textProperty name="${paramZone}" className="longField"/>
+    <th><label for="${paramRegion}">Region: <l:star/></label></th>
+    <td><props:textProperty name="${paramRegion}" className="longField"/>
+    </td>
+</tr>
+
+<c:set var="paramInstanceCap" value="<%=OpenstackCloudParameters.INSTANCE_CAP%>"/>
+<tr>
+    <th><label for="${paramInstanceCap}">InstanceCap: <l:star/></label></th>
+    <td><props:textProperty name="${paramInstanceCap}" className="longField"/>
     </td>
 </tr>
 
