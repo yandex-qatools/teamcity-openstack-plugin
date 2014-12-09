@@ -51,33 +51,33 @@
               <scope>provided</scope>
           </dependency>
 
-            <!-- these are bundled with teamcity -->
-            <!-- to install 'em run this command using each dependency -->
-            <!-- mvn install:install-file -Dfile=PATH_TO_TEAMCITY/webapps/ROOT/WEB-INF/lib/DEPENDENCY.jar -DgroupId=jetbrains.buildServer.* -DartifactId=* -Dversion=${teamcity.version} -Dpackaging=jar -->
-            <dependency>
-                <groupId>jetbrains.buildServer.clouds</groupId>
-                <artifactId>cloud-shared</artifactId>
-                <version>${teamcity.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jetbrains.buildServer.clouds</groupId>
-                <artifactId>cloud-interface</artifactId>
-                <version>${teamcity.version}</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>jetbrains.buildServer.agent</groupId>
-                <artifactId>agent</artifactId>
-                <version>${teamcity.version}</version>
-                <scope>provided</scope>
-            </dependency>
+          <!-- these are bundled with teamcity -->
+          <!-- to install 'em run this command using each dependency -->
+          <!-- mvn install:install-file -Dfile=PATH_TO_TEAMCITY/webapps/ROOT/WEB-INF/lib/DEPENDENCY.jar -DgroupId=jetbrains.buildServer.* -DartifactId=* -Dversion=${teamcity.version} -Dpackaging=jar -->
+          <dependency>
+              <groupId>jetbrains.buildServer.clouds</groupId>
+              <artifactId>cloud-shared</artifactId>
+              <version>${teamcity.version}</version>
+          </dependency>
+          <dependency>
+              <groupId>jetbrains.buildServer.clouds</groupId>
+              <artifactId>cloud-interface</artifactId>
+              <version>${teamcity.version}</version>
+              <scope>provided</scope>
+          </dependency>
+          <dependency>
+              <groupId>jetbrains.buildServer.agent</groupId>
+              <artifactId>agent</artifactId>
+              <version>${teamcity.version}</version>
+              <scope>provided</scope>
+          </dependency>
 
-        </dependencies>
-    </dependencyManagement>
-    <modules>
-        <module>cloud-openstack-server</module>
-        <module>cloud-openstack-agent</module>
-        <module>cloud-openstack-common</module>
-        <module>build</module>
-    </modules>
+      </dependencies>
+  </dependencyManagement>
+  <modules>
+    <module>cloud-openstack-server</module>
+    <module>cloud-openstack-agent</module>
+    <module>cloud-openstack-common</module>
+    <module>build</module>
+  </modules>
 </project>
