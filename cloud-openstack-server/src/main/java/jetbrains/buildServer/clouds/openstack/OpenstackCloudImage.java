@@ -1,5 +1,6 @@
 package jetbrains.buildServer.clouds.openstack;
 
+import com.jcabi.log.VerboseRunnable;
 import jetbrains.buildServer.clouds.*;
 import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
@@ -42,17 +43,17 @@ public class OpenstackCloudImage implements CloudImage {
         this.userScriptPath = userScriptPath;
         this.executor = executor;
 
-        this.errorInfo = null;  //FIXME
+        this.errorInfo = null;  //FIXME: need to use this, really.
 
-        this.executor.scheduleWithFixedDelay(new Runnable() {
+        this.executor.scheduleWithFixedDelay(new VerboseRunnable(new Runnable() {
             public void run() {
                 final Collection<OpenstackCloudInstance> instances = (Collection<OpenstackCloudInstance>) getInstances();
                 for (OpenstackCloudInstance instance : instances) {
                     instance.updateStatus();
-                    if (instance.getStatus() == InstanceStatus.STOPPED || instance.getStatus() == InstanceStatus.ERROR) forgetInstance(instance);
+                    if (instance.getStatus() == InstanceStatus.STOPPED || instance.getStatus() == InstanceStatus.ERROR)
+                        forgetInstance(instance);
                 }
-            }
-        }, 3, 3, TimeUnit.SECONDS);
+            }}, true ), 3, 3, TimeUnit.SECONDS);
     }
 
     @NotNull

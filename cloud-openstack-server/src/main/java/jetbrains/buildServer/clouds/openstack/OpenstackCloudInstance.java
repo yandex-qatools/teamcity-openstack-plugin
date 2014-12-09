@@ -44,6 +44,7 @@ public class OpenstackCloudInstance implements CloudInstance {
     }
 
     public synchronized void updateStatus() {
+        LOG.debug(String.format("Pinging %s for status", getName()));
         if (serverCreated != null) {
             Server server = cloudImage.getNovaApi().get(serverCreated.getId());
             if (server != null) {
@@ -68,6 +69,8 @@ public class OpenstackCloudInstance implements CloudInstance {
                     case SHELVED_OFFLOADED:
                     case STOPPED:
                         setStatus(InstanceStatus.STOPPED);
+                        break;
+                    default:
                         break;
                 }
             } else {
