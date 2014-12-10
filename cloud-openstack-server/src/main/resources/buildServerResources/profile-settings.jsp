@@ -32,7 +32,7 @@
 
 <c:set var="paramInstanceCap" value="<%=OpenstackCloudParameters.INSTANCE_CAP%>"/>
 <tr>
-    <th><label for="${paramInstanceCap}">InstanceCap: <l:star/></label></th>
+    <th><label for="${paramInstanceCap}">Instance Cap: <l:star/></label></th>
     <td><props:textProperty name="${paramInstanceCap}" className="longField"/>
     </td>
 </tr>
