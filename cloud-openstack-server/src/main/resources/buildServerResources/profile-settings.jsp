@@ -45,7 +45,7 @@
     <span class="smallNote">
       YAML formatted list of agent images. i.e:<br/>
       my_teamcity_image:<br/>
-      &nbsp;&nbsp;&nbsp;&nbsp;image: ubuntu_rtusty_14.4<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;image: ubuntu_trusty_14.04<br/>
       &nbsp;&nbsp;&nbsp;&nbsp;flavor: m1.small<br/>
       &nbsp;&nbsp;&nbsp;&nbsp;network: my_openstack_network<br/>
       &nbsp;&nbsp;&nbsp;&nbsp;security_group: default<br/>
