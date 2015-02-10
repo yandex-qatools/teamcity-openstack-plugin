@@ -7,7 +7,7 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <properties>
-        <teamcity.version>8.1</teamcity.version>
+        <teamcity.version>9.0</teamcity.version>
         <jclouds.version>1.8.0</jclouds.version>
     </properties>
     <repositories>
@@ -34,8 +34,8 @@
         <dependencies>
             <!-- these are opensourced teamcity dependencies-->
             <dependency>
-                <groupId>com.intellij</groupId>
-                <artifactId>openapi</artifactId>
+                <groupId>org.jetbrains.teamcity.idea</groupId>
+                <artifactId>obsolete-openapi</artifactId>
                 <version>${teamcity.version}</version>
                 <scope>provided</scope>
             </dependency>
@@ -59,16 +59,11 @@
                 <groupId>jetbrains.buildServer.clouds</groupId>
                 <artifactId>cloud-shared</artifactId>
                 <version>${teamcity.version}</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>jetbrains.buildServer.clouds</groupId>
                 <artifactId>cloud-interface</artifactId>
-                <version>${teamcity.version}</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>jetbrains.buildServer.agent</groupId>
-                <artifactId>agent</artifactId>
                 <version>${teamcity.version}</version>
                 <scope>provided</scope>
             </dependency>

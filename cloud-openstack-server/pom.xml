@@ -30,6 +30,8 @@
                     <artifactId>gson</artifactId>
                 </exclusion>
             </exclusions>
+            <version>${teamcity.version}</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -76,16 +78,14 @@
         <dependency>
             <groupId>jetbrains.buildServer.clouds</groupId>
             <artifactId>cloud-shared</artifactId>
+            <version>${teamcity.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>jetbrains.buildServer.clouds</groupId>
             <artifactId>cloud-interface</artifactId>
+            <version>${teamcity.version}</version>
+            <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>com.intellij</groupId>
-            <artifactId>openapi</artifactId>
-        </dependency>
-
     </dependencies>
 </project>
