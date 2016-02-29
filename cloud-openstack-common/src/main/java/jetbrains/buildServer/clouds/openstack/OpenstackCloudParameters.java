@@ -16,4 +16,7 @@ public interface OpenstackCloudParameters {
 
     String OPENSTACK_INSTANCE_ID = "agent.cloud.uuid";
     String AGENT_CLOUD_TYPE = "agent.cloud.type";
+
+    String SERVER_URL = "openstack.teamcity.server_url";
+    String AGENT_NAME = "openstack.name";
 }

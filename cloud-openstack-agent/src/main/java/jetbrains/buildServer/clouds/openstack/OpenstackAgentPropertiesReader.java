@@ -21,14 +21,15 @@ import java.nio.charset.StandardCharsets;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 
-public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
+public class OpenstackAgentPropertiesReader extends AgentLifeCycleAdapter {
     @NotNull private static final Logger LOG = Loggers.AGENT;
     @NotNull private final String metadataUrl = "http://169.254.169.254/openstack/latest/meta_data.json";
     @NotNull private final BuildAgentConfigurationEx agentConfiguration;
 
-    public OpenstackAgentProperties(@NotNull final BuildAgentConfigurationEx agentConfiguration, @NotNull EventDispatcher<AgentLifeCycleAdapter> dispatcher) {
+    public OpenstackAgentPropertiesReader(@NotNull final BuildAgentConfigurationEx agentConfiguration, @NotNull EventDispatcher<AgentLifeCycleAdapter> dispatcher) {
         this.agentConfiguration = agentConfiguration;
         dispatcher.addListener(this);
     }
@@ -41,24 +42,36 @@ public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
 
             JsonElement metadataElement = new JsonParser().parse(rawMetadata);
 
+            JsonElement teamCityUserData = metadataElement.getAsJsonObject().get("meta");
+            Type type = new TypeToken<HashMap<String, String>>() {}.getType();
+            HashMap<String,String> customParameters = new Gson().fromJson(teamCityUserData, type);
+
+            if (!customParameters.containsKey(OpenstackCloudParameters.SERVER_URL)) {
+                LOG.info("Not my OpenStack instance, skipping");
+                return;
+            }
+
+            for (Map.Entry<String, String> entry : customParameters.entrySet()) {
+                if (Objects.equals(entry.getKey(), OpenstackCloudParameters.SERVER_URL)) {
+                    agentConfiguration.setServerUrl(entry.getValue());
+                } else if (entry.getKey().equals(OpenstackCloudParameters.AGENT_NAME)) {
+                    agentConfiguration.setName(entry.getValue());
+                } else {
+                    agentConfiguration.addConfigurationParameter(entry.getKey(), entry.getValue());
+                }
+            }
+
             String uuid = metadataElement.getAsJsonObject().get("uuid").getAsString();
             if (uuid != null) {
                 LOG.info(String.format("Setting %s to %s", OpenstackCloudParameters.OPENSTACK_INSTANCE_ID, uuid));
                 agentConfiguration.addConfigurationParameter(OpenstackCloudParameters.OPENSTACK_INSTANCE_ID, uuid);
             }
 
-            String name = metadataElement.getAsJsonObject().get("name").getAsString();
-            if (name != null) {
-                LOG.info(String.format("Setting name to %s", name));
-                agentConfiguration.setName(name);
-            }
-
-            JsonElement teamCityUserData = metadataElement.getAsJsonObject().get("meta");
-            Type type = new TypeToken<HashMap<String, String>>() {}.getType();
-            HashMap<String,String> customParameters = new Gson().fromJson(teamCityUserData, type);
-            for (Map.Entry<String, String> entry : customParameters.entrySet()) {
-                agentConfiguration.addConfigurationParameter(entry.getKey(), entry.getValue());
-            }
+//            String name = metadataElement.getAsJsonObject().get("name").getAsString();
+//            if (name != null) {
+//                LOG.info(String.format("Setting name to %s", name));
+//                agentConfiguration.setName(name);
+//            }
 
             LOG.info(String.format("Setting %s to %s", OpenstackCloudParameters.AGENT_CLOUD_TYPE, OpenstackCloudParameters.CLOUD_TYPE));
             agentConfiguration.addConfigurationParameter(OpenstackCloudParameters.AGENT_CLOUD_TYPE, OpenstackCloudParameters.CLOUD_TYPE);
