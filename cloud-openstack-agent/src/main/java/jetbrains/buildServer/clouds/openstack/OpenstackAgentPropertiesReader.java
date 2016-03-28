@@ -54,8 +54,6 @@ public class OpenstackAgentPropertiesReader extends AgentLifeCycleAdapter {
             for (Map.Entry<String, String> entry : customParameters.entrySet()) {
                 if (Objects.equals(entry.getKey(), OpenstackCloudParameters.SERVER_URL)) {
                     agentConfiguration.setServerUrl(entry.getValue());
-                } else if (entry.getKey().equals(OpenstackCloudParameters.AGENT_NAME)) {
-                    agentConfiguration.setName(entry.getValue());
                 } else {
                     agentConfiguration.addConfigurationParameter(entry.getKey(), entry.getValue());
                 }
@@ -67,11 +65,10 @@ public class OpenstackAgentPropertiesReader extends AgentLifeCycleAdapter {
                 agentConfiguration.addConfigurationParameter(OpenstackCloudParameters.OPENSTACK_INSTANCE_ID, uuid);
             }
 
-//            String name = metadataElement.getAsJsonObject().get("name").getAsString();
-//            if (name != null) {
-//                LOG.info(String.format("Setting name to %s", name));
-//                agentConfiguration.setName(name);
-//            }
+            String name = metadataElement.getAsJsonObject().get("name").getAsString();
+            if (name != null) {
+                agentConfiguration.setName(name);
+            }
 
             LOG.info(String.format("Setting %s to %s", OpenstackCloudParameters.AGENT_CLOUD_TYPE, OpenstackCloudParameters.CLOUD_TYPE));
             agentConfiguration.addConfigurationParameter(OpenstackCloudParameters.AGENT_CLOUD_TYPE, OpenstackCloudParameters.CLOUD_TYPE);

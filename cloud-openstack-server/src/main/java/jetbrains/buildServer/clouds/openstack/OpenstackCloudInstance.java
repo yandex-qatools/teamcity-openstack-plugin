@@ -171,7 +171,6 @@ public class OpenstackCloudInstance implements CloudInstance {
         Map<String, String> metadata = new HashMap<>();
         metadata.putAll(data.getCustomAgentConfigurationParameters());
         metadata.put(OpenstackCloudParameters.SERVER_URL, data.getServerAddress());
-        metadata.put(OpenstackCloudParameters.AGENT_NAME, data.getAgentName());
         return metadata;
     }
 
