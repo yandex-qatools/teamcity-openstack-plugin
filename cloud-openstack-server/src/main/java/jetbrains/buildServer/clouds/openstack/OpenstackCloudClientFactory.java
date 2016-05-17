@@ -8,6 +8,7 @@ import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.InvalidProperty;
 import jetbrains.buildServer.serverSide.PropertiesProcessor;
+import jetbrains.buildServer.serverSide.ServerPaths;
 import jetbrains.buildServer.util.NamedDaemonThreadFactory;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
 import com.intellij.openapi.diagnostic.Logger;
@@ -26,9 +27,13 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
     @NotNull
     private final String cloudProfileSettings;
 
+    private final ServerPaths serverPaths;
+
     public OpenstackCloudClientFactory(@NotNull final CloudRegistrar cloudRegistrar,
-                                       @NotNull final PluginDescriptor pluginDescriptor) {
+                                       @NotNull final PluginDescriptor pluginDescriptor,
+                                       @NotNull final ServerPaths serverPaths) {
         cloudProfileSettings = pluginDescriptor.getPluginResourcesPath("profile-settings.jsp");
+        this.serverPaths = serverPaths;
         cloudRegistrar.registerCloudFactory(this);
     }
 
@@ -74,6 +79,6 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
             public ScheduledExecutorService createExecutorService(@NotNull final String duty) {
                 return Executors.newSingleThreadScheduledExecutor(new NamedDaemonThreadFactory("openstack-" + duty));
             }
-        });
+        }, serverPaths);
     }
 }
