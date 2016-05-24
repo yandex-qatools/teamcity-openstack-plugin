@@ -159,7 +159,11 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
 
     @Nullable
     public String generateAgentName(@NotNull final AgentDescription agentDescription) {
-        return null;
+        Map<String, String> configuration = agentDescription.getConfigurationParameters();
+        if (configuration == null) {
+            return null;
+        }
+        return configuration.get("teamcity.agent.name");
     }
 
     public void dispose() {
