@@ -215,4 +215,9 @@ public class OpenstackCloudInstance implements CloudInstance {
             }
         }
     }
+
+    @Override
+    public String toString() {
+        return "OpenStackInstance(" + getName() + ")";
+    }
 }
