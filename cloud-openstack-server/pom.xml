@@ -87,5 +87,11 @@
             <version>${teamcity.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>jetbrains.buildServer.clouds</groupId>
+            <artifactId>cloud-server</artifactId>
+            <version>${teamcity.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>

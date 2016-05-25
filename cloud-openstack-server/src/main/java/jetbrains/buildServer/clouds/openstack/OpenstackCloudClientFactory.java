@@ -4,6 +4,7 @@ import jetbrains.buildServer.clouds.CloudClientFactory;
 import jetbrains.buildServer.clouds.CloudClientParameters;
 import jetbrains.buildServer.clouds.CloudRegistrar;
 import jetbrains.buildServer.clouds.CloudState;
+import jetbrains.buildServer.clouds.server.instances.CloudEventDispatcher;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.InvalidProperty;
@@ -31,10 +32,12 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
 
     public OpenstackCloudClientFactory(@NotNull final CloudRegistrar cloudRegistrar,
                                        @NotNull final PluginDescriptor pluginDescriptor,
-                                       @NotNull final ServerPaths serverPaths) {
+                                       @NotNull final ServerPaths serverPaths,
+                                       @NotNull final CloudEventDispatcher eventDispatcher) {
         cloudProfileSettings = pluginDescriptor.getPluginResourcesPath("profile-settings.jsp");
         this.serverPaths = serverPaths;
         cloudRegistrar.registerCloudFactory(this);
+        eventDispatcher.addListener(new CloudListener());
     }
 
     @NotNull
