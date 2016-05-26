@@ -28,6 +28,12 @@ public class CloudListener implements CloudEventListener {
         return a.toString().replace(" ", "_");
     }
 
+    private String orNullOrDefault(String a, String def) {
+        if (a == null)
+            return def;
+        return a.toString().replace(" ", "_");
+    }
+
     private String orNull(Date a) {
         if (a == null) {
             return "null";
@@ -39,7 +45,7 @@ public class CloudListener implements CloudEventListener {
         if (a == null) {
             return "null";
         }
-        return orNull(a.getMessage());
+        return orNullOrDefault(a.getMessage(), a.getClass().getName());
     }
 
     private String agent(SBuildAgent agent) {
