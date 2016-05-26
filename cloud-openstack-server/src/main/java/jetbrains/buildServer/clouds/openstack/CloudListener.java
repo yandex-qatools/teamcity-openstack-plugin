@@ -39,16 +39,19 @@ public class CloudListener implements CloudEventListener {
         if (a == null) {
             return "null";
         }
-        return a.getMessage().replace(" ", "_");
+        return orNull(a.getMessage());
     }
 
     private String agent(SBuildAgent agent) {
+        if (agent == null)
+            return "null";
         return orNull(agent.getName())
                 + " " + orNull(agent.getHostAddress())
+                + " " + agent.getPort()
                 + " " + orNull(agent.getHostName())
-                + " " + agent.getAuthorizationToken()
+                + " " + orNull(agent.getAuthorizationToken())
                 + " " + orNull(agent.getRegistrationTimestamp())
-                + " " + agent.getVersion()
+                + " " + orNull(agent.getVersion())
                 + " " + orNull(agent.getUnregistrationComment())
                 + " " + orNull(agent.getAuthorizeComment().getComment())
                 + " " + orNull(agent.getAgentStatusRestoringTimestamp())
