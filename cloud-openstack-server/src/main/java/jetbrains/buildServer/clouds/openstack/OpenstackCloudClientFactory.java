@@ -32,12 +32,10 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
 
     public OpenstackCloudClientFactory(@NotNull final CloudRegistrar cloudRegistrar,
                                        @NotNull final PluginDescriptor pluginDescriptor,
-                                       @NotNull final ServerPaths serverPaths,
-                                       @NotNull final CloudEventDispatcher eventDispatcher) {
+                                       @NotNull final ServerPaths serverPaths) {
         cloudProfileSettings = pluginDescriptor.getPluginResourcesPath("profile-settings.jsp");
         this.serverPaths = serverPaths;
         cloudRegistrar.registerCloudFactory(this);
-        eventDispatcher.addListener(new CloudListener());
     }
 
     @NotNull
