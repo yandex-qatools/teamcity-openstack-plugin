@@ -6,6 +6,7 @@ import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import com.intellij.openapi.diagnostic.Logger;
+import jetbrains.buildServer.serverSide.ServerPaths;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,7 +21,9 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     @Nullable private CloudErrorInfo errorInfo = null;
     @Nullable private final Integer instanceCap;
 
-    public OpenstackCloudClient(@NotNull final CloudClientParameters params, @NotNull final ExecutorServiceFactory factory) {
+    public OpenstackCloudClient(@NotNull final CloudClientParameters params,
+                                @NotNull final ExecutorServiceFactory factory,
+                                @NotNull final ServerPaths serverPaths) {
 
         final String endpointUrl = params.getParameter(OpenstackCloudParameters.ENDPOINT_URL).trim();
         final String identity = params.getParameter(OpenstackCloudParameters.IDENTITY).trim();
@@ -77,7 +80,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
                     flavorName,
                     options,
                     userScriptPath,
-                    factory.createExecutorService(imageName));
+                    factory.createExecutorService(imageName), serverPaths);
 
             cloudImages.add(image);
 
@@ -125,6 +128,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         return errorInfo;
     }
 
+    @Override
     public boolean canStartNewInstance(@NotNull final CloudImage image) {
         if (instanceCap == null) {
             return true;
@@ -138,14 +142,17 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     }
 
     @NotNull
+    @Override
     public CloudInstance startNewInstance(@NotNull final CloudImage image, @NotNull final CloudInstanceUserData data) throws QuotaException {
         return ((OpenstackCloudImage)image).startNewInstance(data);
     }
 
+    @Override
     public void restartInstance(@NotNull final CloudInstance instance) {
         ((OpenstackCloudInstance)instance).restart();
     }
 
+    @Override
     public void terminateInstance(@NotNull final CloudInstance instance) {
         ((OpenstackCloudInstance)instance).terminate();
     }
