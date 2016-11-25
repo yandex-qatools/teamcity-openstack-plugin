@@ -94,6 +94,16 @@ public class OpenstackCloudImage implements CloudImage {
         return imageName;
     }
 
+    @Override
+    public String getDescription() {
+        return null;
+    }
+
+    @Nullable
+    public Integer getAgentPoolId() {
+        return null;
+    }
+
     @NotNull
     public String getOpenstackImageName() {
         return this.openstackImageName;
