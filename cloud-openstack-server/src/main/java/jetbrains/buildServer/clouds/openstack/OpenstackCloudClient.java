@@ -6,6 +6,7 @@ import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import com.intellij.openapi.diagnostic.Logger;
+import jetbrains.buildServer.serverSide.ServerPaths;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,7 +21,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     @Nullable private CloudErrorInfo errorInfo = null;
     @Nullable private final Integer instanceCap;
 
-    public OpenstackCloudClient(@NotNull final CloudClientParameters params, @NotNull final ExecutorServiceFactory factory) {
+    public OpenstackCloudClient(@NotNull final CloudClientParameters params, @NotNull ServerPaths serverPaths, @NotNull final ExecutorServiceFactory factory) {
 
         final String endpointUrl = params.getParameter(OpenstackCloudParameters.ENDPOINT_URL).trim();
         final String identity = params.getParameter(OpenstackCloudParameters.IDENTITY).trim();
@@ -77,6 +78,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
                     flavorName,
                     options,
                     userScriptPath,
+                    serverPaths,
                     factory.createExecutorService(imageName));
 
             cloudImages.add(image);

@@ -6,7 +6,6 @@ import jetbrains.buildServer.clouds.*;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.ServerPaths;
-import jetbrains.buildServer.serverSide.TeamCityServerProperties;
 import jetbrains.buildServer.util.ExceptionUtil;
 import jetbrains.buildServer.util.FileUtil;
 import org.jclouds.openstack.nova.v2_0.domain.Server;
@@ -27,6 +26,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class OpenstackCloudInstance implements CloudInstance {
     @NotNull private static final Logger LOG = Logger.getInstance(Loggers.CLOUD_CATEGORY_ROOT);
     @NotNull private final String instanceId;
+    @NotNull private final ServerPaths serverPaths;
     @NotNull private final OpenstackCloudImage cloudImage;
     @NotNull private final Date startDate;
     @Nullable private volatile CloudErrorInfo errorInfo;
@@ -35,9 +35,10 @@ public class OpenstackCloudInstance implements CloudInstance {
 
     private final AtomicReference<InstanceStatus> status = new AtomicReference<InstanceStatus>(InstanceStatus.SCHEDULED_TO_START);
 
-    public OpenstackCloudInstance(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId, @NotNull ScheduledExecutorService executor) {
+    public OpenstackCloudInstance(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId, @NotNull ServerPaths serverPaths, @NotNull ScheduledExecutorService executor) {
         this.cloudImage = image;
         this.instanceId = instanceId;
+        this.serverPaths = serverPaths;
         this.startDate = new Date();
         this.executor = executor;
         setStatus(InstanceStatus.SCHEDULED_TO_START);
@@ -185,8 +186,7 @@ public class OpenstackCloudInstance implements CloudInstance {
                 // sorry
                 String userScriptPath = cloudImage.getUserScriptPath();
                 if (!Strings.isNullOrEmpty(userScriptPath)) {
-                    String teamcityPath = TeamCityServerProperties.getDataPath();
-                    File pluginData = new ServerPaths(teamcityPath).getPluginDataDirectory();
+                    File pluginData = serverPaths.getPluginDataDirectory();
                     File userScriptFile = new File(new File(pluginData, OpenstackCloudParameters.PLUGIN_SHORT_NAME), userScriptPath);
                     try {
                         String userScript = FileUtil.readText(userScriptFile);

@@ -2,6 +2,7 @@ package jetbrains.buildServer.clouds.openstack;
 
 import com.jcabi.log.VerboseRunnable;
 import jetbrains.buildServer.clouds.*;
+import jetbrains.buildServer.serverSide.ServerPaths;
 import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
@@ -20,6 +21,7 @@ public class OpenstackCloudImage implements CloudImage {
     @NotNull private final OpenstackApi openstackApi;
     @NotNull private final CreateServerOptions options;
     @Nullable private final String userScriptPath;
+    @NotNull private final ServerPaths serverPaths;
     @NotNull private final ScheduledExecutorService executor;
 
     @NotNull private final Map<String, OpenstackCloudInstance> instances = new ConcurrentHashMap<String, OpenstackCloudInstance>();
@@ -33,6 +35,7 @@ public class OpenstackCloudImage implements CloudImage {
                                @NotNull final String flavorId,
                                @NotNull final CreateServerOptions options,
                                @Nullable final String userScriptPath,
+                               @NotNull final ServerPaths serverPaths,
                                @NotNull final ScheduledExecutorService executor) {
         this.imageId = imageId;
         this.imageName = imageName;
@@ -41,6 +44,7 @@ public class OpenstackCloudImage implements CloudImage {
         this.flavorName = flavorId;
         this.options = options;
         this.userScriptPath = userScriptPath;
+        this.serverPaths = serverPaths;
         this.executor = executor;
 
         this.errorInfo = null;  //FIXME: need to use this, really.
@@ -116,6 +120,12 @@ public class OpenstackCloudImage implements CloudImage {
     }
 
     @Nullable
+    @Override
+    public Integer getAgentPoolId() {
+        return 0;
+    }
+
+    @Nullable
     public CloudErrorInfo getErrorInfo() {
         return errorInfo;
     }
@@ -123,7 +133,7 @@ public class OpenstackCloudImage implements CloudImage {
     @NotNull
     public synchronized OpenstackCloudInstance startNewInstance(@NotNull final CloudInstanceUserData data) {
         final String instanceId = instanceIdGenerator.next();
-        final OpenstackCloudInstance instance = new OpenstackCloudInstance(this, instanceId, executor);
+        final OpenstackCloudInstance instance = new OpenstackCloudInstance(this, instanceId, serverPaths, executor);
 
         instances.put(instanceId, instance);
         instance.start(data);
