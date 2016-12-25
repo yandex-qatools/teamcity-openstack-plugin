@@ -53,7 +53,7 @@
       &nbsp;&nbsp;&nbsp;&nbsp;*user_script: my_startup_script.sh<br/>
       &nbsp;&nbsp;&nbsp;&nbsp;*availability_zone: my_zone<br/>
       starred parameters are optional<br/>
-      user_script should be located at teamcity server in directopy TEAMCITY_DATA_PATH/server/pluginData/openstack
+      user_script should be located at teamcity server in directopy TEAMCITY_DATA_PATH/system/pluginData/openstack
     </span>
     </td>
 </tr>
