@@ -21,9 +21,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     @Nullable private CloudErrorInfo errorInfo = null;
     @Nullable private final Integer instanceCap;
 
-    public OpenstackCloudClient(@NotNull final CloudClientParameters params,
-                                @NotNull final ExecutorServiceFactory factory,
-                                @NotNull final ServerPaths serverPaths) {
+    public OpenstackCloudClient(@NotNull final CloudClientParameters params, @NotNull ServerPaths serverPaths, @NotNull final ExecutorServiceFactory factory) {
 
         final String endpointUrl = params.getParameter(OpenstackCloudParameters.ENDPOINT_URL).trim();
         final String identity = params.getParameter(OpenstackCloudParameters.IDENTITY).trim();
@@ -80,7 +78,8 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
                     flavorName,
                     options,
                     userScriptPath,
-                    factory.createExecutorService(imageName), serverPaths);
+                    serverPaths,
+                    factory.createExecutorService(imageName));
 
             cloudImages.add(image);
 

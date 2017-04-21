@@ -21,8 +21,8 @@ public class OpenstackCloudImage implements CloudImage {
     @NotNull private final OpenstackApi openstackApi;
     @NotNull private final CreateServerOptions options;
     @Nullable private final String userScriptPath;
-    @NotNull private final ScheduledExecutorService executor;
     @NotNull private final ServerPaths serverPaths;
+    @NotNull private final ScheduledExecutorService executor;
 
     @NotNull private final Map<String, OpenstackCloudInstance> instances = new ConcurrentHashMap<String, OpenstackCloudInstance>();
     @NotNull private final IdGenerator instanceIdGenerator = new IdGenerator();
@@ -35,8 +35,8 @@ public class OpenstackCloudImage implements CloudImage {
                                @NotNull final String flavorId,
                                @NotNull final CreateServerOptions options,
                                @Nullable final String userScriptPath,
-                               @NotNull final ScheduledExecutorService executor,
-                               @NotNull final ServerPaths serverPaths) {
+                               @NotNull final ServerPaths serverPaths,
+                               @NotNull final ScheduledExecutorService executor) {
         this.imageId = imageId;
         this.imageName = imageName;
         this.openstackApi = openstackApi;
@@ -44,8 +44,8 @@ public class OpenstackCloudImage implements CloudImage {
         this.flavorName = flavorId;
         this.options = options;
         this.userScriptPath = userScriptPath;
-        this.executor = executor;
         this.serverPaths = serverPaths;
+        this.executor = executor;
 
         this.errorInfo = null;  //FIXME: need to use this, really.
 
@@ -94,16 +94,6 @@ public class OpenstackCloudImage implements CloudImage {
         return imageName;
     }
 
-    @Override
-    public String getDescription() {
-        return null;
-    }
-
-    @Nullable
-    public Integer getAgentPoolId() {
-        return null;
-    }
-
     @NotNull
     public String getOpenstackImageName() {
         return this.openstackImageName;
@@ -130,6 +120,12 @@ public class OpenstackCloudImage implements CloudImage {
     }
 
     @Nullable
+    @Override
+    public Integer getAgentPoolId() {
+        return 0;
+    }
+
+    @Nullable
     public CloudErrorInfo getErrorInfo() {
         return errorInfo;
     }
@@ -137,7 +133,7 @@ public class OpenstackCloudImage implements CloudImage {
     @NotNull
     public synchronized OpenstackCloudInstance startNewInstance(@NotNull final CloudInstanceUserData data) {
         final String instanceId = instanceIdGenerator.next();
-        final OpenstackCloudInstance instance = new OpenstackCloudInstance(this, instanceId, executor, serverPaths);
+        final OpenstackCloudInstance instance = new OpenstackCloudInstance(this, instanceId, serverPaths, executor);
 
         instances.put(instanceId, instance);
         instance.start(data);

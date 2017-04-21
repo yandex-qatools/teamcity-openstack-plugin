@@ -8,12 +8,12 @@
     <packaging>pom</packaging>
     <properties>
         <teamcity.version>10.0.3</teamcity.version>
-        <jclouds.version>1.9.0</jclouds.version>
+        <jclouds.version>2.0.0</jclouds.version>
     </properties>
     <repositories>
         <repository>
             <id>JetBrains</id>
-            <url>http://repository.jetbrains.com/all</url>
+            <url>http://download.jetbrains.com/teamcity-repository</url>
         </repository>
     </repositories>
     <build>
@@ -56,13 +56,13 @@
             <!-- to install 'em run this command using each dependency -->
             <!-- mvn install:install-file -Dfile=PATH_TO_TEAMCITY/webapps/ROOT/WEB-INF/lib/DEPENDENCY.jar -DgroupId=jetbrains.buildServer.clouds -DartifactId=DEPENDENCY -Dversion=${teamcity.version} -Dpackaging=jar -->
             <dependency>
-                <groupId>jetbrains.buildServer.clouds</groupId>
+                <groupId>org.jetbrains.teamcity</groupId>
                 <artifactId>cloud-shared</artifactId>
                 <version>${teamcity.version}</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>
-                <groupId>jetbrains.buildServer.clouds</groupId>
+                <groupId>org.jetbrains.teamcity</groupId>
                 <artifactId>cloud-interface</artifactId>
                 <version>${teamcity.version}</version>
                 <scope>provided</scope>
