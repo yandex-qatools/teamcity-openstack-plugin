@@ -76,13 +76,13 @@
         </dependency>
 
         <dependency>
-            <groupId>jetbrains.buildServer.clouds</groupId>
+            <groupId>org.jetbrains.teamcity</groupId>
             <artifactId>cloud-shared</artifactId>
             <version>${teamcity.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>jetbrains.buildServer.clouds</groupId>
+            <groupId>org.jetbrains.teamcity</groupId>
             <artifactId>cloud-interface</artifactId>
             <version>${teamcity.version}</version>
             <scope>provided</scope>
