@@ -122,7 +122,7 @@ public class OpenstackCloudImage implements CloudImage {
     @Nullable
     @Override
     public Integer getAgentPoolId() {
-        return 0;
+        return null;
     }
 
     @Nullable
