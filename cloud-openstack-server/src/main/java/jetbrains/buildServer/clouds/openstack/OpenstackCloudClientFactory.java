@@ -9,7 +9,7 @@ import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.InvalidProperty;
 import jetbrains.buildServer.serverSide.PropertiesProcessor;
 import jetbrains.buildServer.serverSide.ServerPaths;
-import jetbrains.buildServer.util.NamedDeamonThreadFactory;
+import jetbrains.buildServer.util.NamedDaemonThreadFactory;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
 import com.intellij.openapi.diagnostic.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -74,7 +74,7 @@ public class OpenstackCloudClientFactory implements CloudClientFactory {
         return new OpenstackCloudClient(params, serverPaths, new ExecutorServiceFactory() {
             @NotNull
             public ScheduledExecutorService createExecutorService(@NotNull final String duty) {
-                return Executors.newSingleThreadScheduledExecutor(new NamedDeamonThreadFactory("openstack-" + duty));
+                return Executors.newSingleThreadScheduledExecutor(new NamedDaemonThreadFactory("openstack-" + duty));
             }
         });
     }

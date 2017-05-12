@@ -127,6 +127,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         return errorInfo;
     }
 
+    @Override
     public boolean canStartNewInstance(@NotNull final CloudImage image) {
         if (instanceCap == null) {
             return true;
@@ -140,14 +141,17 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     }
 
     @NotNull
+    @Override
     public CloudInstance startNewInstance(@NotNull final CloudImage image, @NotNull final CloudInstanceUserData data) throws QuotaException {
         return ((OpenstackCloudImage)image).startNewInstance(data);
     }
 
+    @Override
     public void restartInstance(@NotNull final CloudInstance instance) {
         ((OpenstackCloudInstance)instance).restart();
     }
 
+    @Override
     public void terminateInstance(@NotNull final CloudInstance instance) {
         ((OpenstackCloudInstance)instance).terminate();
     }

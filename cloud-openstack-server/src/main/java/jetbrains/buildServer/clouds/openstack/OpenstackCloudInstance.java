@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
@@ -78,7 +79,7 @@ public class OpenstackCloudInstance implements CloudInstance {
                 setStatus(InstanceStatus.STOPPED);
             }
         } else {
-            LOG.debug(String.format("Will skip status updating cause instance is not created yet"));
+            LOG.debug("Will skip status updating cause instance is not created yet");
         }
     }
 
@@ -167,6 +168,13 @@ public class OpenstackCloudInstance implements CloudInstance {
         setStatus(InstanceStatus.ERROR);
     }
 
+    private Map<String, String> getMetadata(@NotNull final CloudInstanceUserData data) {
+        Map<String, String> metadata = new HashMap<>();
+        metadata.putAll(data.getCustomAgentConfigurationParameters());
+        metadata.put(OpenstackCloudParameters.SERVER_URL, data.getServerAddress());
+        return metadata;
+    }
+
     private class StartAgentCommand implements Runnable {
         private final CloudInstanceUserData userData;
         public StartAgentCommand(@NotNull final CloudInstanceUserData data) {
@@ -178,7 +186,7 @@ public class OpenstackCloudInstance implements CloudInstance {
                 String openstackImageId = cloudImage.getOpenstackImageId();
                 String flavorId = cloudImage.getFlavorId();
                 CreateServerOptions options = cloudImage.getImageOptions();
-                options.metadata(userData.getCustomAgentConfigurationParameters());
+                options.metadata(getMetadata(userData));
 
                 // TODO: that code should be in OpenstackCloudImage
                 // but as we make it possible to change userScript
@@ -205,5 +213,10 @@ public class OpenstackCloudInstance implements CloudInstance {
                 processError(e);
             }
         }
+    }
+
+    @Override
+    public String toString() {
+        return "OpenStackInstance(" + getName() + ")";
     }
 }
