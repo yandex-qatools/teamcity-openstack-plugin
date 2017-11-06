@@ -12,6 +12,8 @@ public interface OpenstackCloudParameters {
     String REGION = "clouds.openstack.zone";
     String INSTANCE_CAP = "clouds.openstack.instanceCap";
 
+    String AGENT_METADATA_DISABLE = "clouds.openstack.metadata.disable";
+    
     String IMAGES_PROFILES = "clouds.openstack.images";
 
     String OPENSTACK_INSTANCE_ID = "agent.cloud.uuid";

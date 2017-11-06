@@ -1,0 +1,8 @@
+{
+	"random_seed": "xxxx",
+	"uuid": "xxxx-yyyyy-zzzz",
+	"availability_zone": "nova",
+	"keys": [{
+		"data": "ssh-rsa foobar Generated-by-Nova",
+		"type": "ssh",
+		"na
