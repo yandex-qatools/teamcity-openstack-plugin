@@ -1,0 +1,8 @@
+test.v2.url=https://openstack.company.com/v2.0
+test.v2.identity=tenant:user
+test.v2.password=foobar
+test.v2.region=region1
+test.v3.url=https://openstack.company.com/v3
+test.v3.identity=domain:tenant:user
+test.v3.password=foobar
+test.v3.region=region1

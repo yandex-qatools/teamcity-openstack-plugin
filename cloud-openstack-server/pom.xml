@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <artifactId>cloud-openstack</artifactId>
         <groupId>jetbrains.buildServer.clouds</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.1-SNAPSHOT</version>
     </parent>
     <artifactId>cloud-openstack-server</artifactId>
     <packaging>jar</packaging>
@@ -30,7 +29,6 @@
                     <artifactId>gson</artifactId>
                 </exclusion>
             </exclusions>
-            <version>${teamcity.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -70,7 +68,7 @@
             <version>${jclouds.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.jclouds.labs</groupId>
+            <groupId>org.apache.jclouds.api</groupId>
             <artifactId>openstack-neutron</artifactId>
             <version>${jclouds.version}</version>
         </dependency>
@@ -78,14 +76,19 @@
         <dependency>
             <groupId>org.jetbrains.teamcity</groupId>
             <artifactId>cloud-shared</artifactId>
-            <version>${teamcity.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.teamcity</groupId>
             <artifactId>cloud-interface</artifactId>
-            <version>${teamcity.version}</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- unit test -->
+        <dependency>
+            <groupId>org.jetbrains.teamcity</groupId>
+            <artifactId>tests-support</artifactId>
+        </dependency>
+
     </dependencies>
 </project>
