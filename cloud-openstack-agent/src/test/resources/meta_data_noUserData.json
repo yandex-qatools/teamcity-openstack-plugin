@@ -1,0 +1,17 @@
+{
+	"random_seed": "xxxx",
+	"uuid": "xxxx-yyyyy-zzzz",
+	"availability_zone": "nova",
+	"keys": [{
+		"data": "ssh-rsa foobar Generated-by-Nova",
+		"type": "ssh",
+		"name": "keyHOS"
+	}],
+	"hostname": "test.novalocal",
+	"launch_index": 0,
+	"public_keys": {
+		"KeyHOS": "ssh-rsa foobar Generated-by-Nova"
+	},
+	"project_id": "vufhfi435T4trvtrvtr",
+	"name": "openstack_test"
+}

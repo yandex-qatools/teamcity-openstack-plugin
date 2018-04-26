@@ -7,8 +7,11 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <properties>
-        <teamcity.version>10.0.3</teamcity.version>
+        <teamcity.version>2017.2</teamcity.version>
         <jclouds.version>2.0.0</jclouds.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <repositories>
         <repository>
@@ -16,20 +19,6 @@
             <url>http://download.jetbrains.com/teamcity-repository</url>
         </repository>
     </repositories>
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <configuration>
-                        <source>1.7</source>
-                        <target>1.7</target>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
     <dependencyManagement>
         <dependencies>
             <!-- these are opensourced teamcity dependencies-->
@@ -66,6 +55,21 @@
                 <artifactId>cloud-interface</artifactId>
                 <version>${teamcity.version}</version>
                 <scope>provided</scope>
+            </dependency>
+
+            <!-- Unit tests -->
+            <dependency>
+                <groupId>org.jetbrains.teamcity</groupId>
+                <artifactId>tests-support</artifactId>
+                <version>${teamcity.version}</version>
+                <scope>test</scope>
+                <exclusions>
+                    <!-- TestNG is used, avoid confusion -->
+                    <exclusion>
+                        <groupId>junit</groupId>
+                        <artifactId>junit</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
         </dependencies>
