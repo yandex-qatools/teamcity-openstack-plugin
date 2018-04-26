@@ -50,3 +50,16 @@ You can specify idle time on the agent cloud profile, after which the instance s
 
 ## Usage
 Use Openstack virtual agents as regular build agents
+
+
+### Metadata disable
+
+With this plugin, any TeamCity agent on an Openstack virtual machine retrieves its information from `http://169.254.169.254/openstack/latest/meta_data.json` (uuid, name, user datas).
+
+If you want disable this metadata usage, please add in agent configuration file (`buildAgent.properties`):
+
+```
+clouds.openstack.metadata.disable = true
+```
+
+This usage is mainly designed for instantiate some TeamCity agent(s) on an Openstack virtual machine as a classic way (name defined in configuration file, ...), without they are in cloud profile.
