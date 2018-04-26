@@ -5,3 +5,4 @@ target/
 .DS_Store
 /.settings/
 /.project
+/.README.md.html

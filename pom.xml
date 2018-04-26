@@ -1,14 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>jetbrains.buildServer.clouds</groupId>
     <artifactId>cloud-openstack</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <properties>
         <teamcity.version>2017.2</teamcity.version>
-        <jclouds.version>2.0.0</jclouds.version>
+        <jclouds.version>2.1.0</jclouds.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -21,7 +20,7 @@
     </repositories>
     <dependencyManagement>
         <dependencies>
-            <!-- these are opensourced teamcity dependencies-->
+            <!-- these are opensourced teamcity dependencies (mainly on https://download.jetbrains.com/teamcity-repository) -->
             <dependency>
                 <groupId>org.jetbrains.teamcity.idea</groupId>
                 <artifactId>obsolete-openapi</artifactId>
@@ -40,10 +39,6 @@
                 <version>${teamcity.version}</version>
                 <scope>provided</scope>
             </dependency>
-
-            <!-- these are bundled with teamcity -->
-            <!-- to install 'em run this command using each dependency -->
-            <!-- mvn install:install-file -Dfile=PATH_TO_TEAMCITY/webapps/ROOT/WEB-INF/lib/DEPENDENCY.jar -DgroupId=jetbrains.buildServer.clouds -DartifactId=DEPENDENCY -Dversion=${teamcity.version} -Dpackaging=jar -->
             <dependency>
                 <groupId>org.jetbrains.teamcity</groupId>
                 <artifactId>cloud-shared</artifactId>
