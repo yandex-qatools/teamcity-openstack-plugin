@@ -1,27 +1,44 @@
 package jetbrains.buildServer.clouds.openstack;
 
-import com.google.common.base.Strings;
-import jetbrains.buildServer.clouds.*;
-import jetbrains.buildServer.log.Loggers;
-import jetbrains.buildServer.serverSide.AgentDescription;
-import jetbrains.buildServer.serverSide.BuildServerAdapter;
-import com.intellij.openapi.diagnostic.Logger;
-import jetbrains.buildServer.serverSide.ServerPaths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.yaml.snakeyaml.Yaml;
 
-import java.util.*;
+import com.google.common.base.Strings;
+import com.intellij.openapi.diagnostic.Logger;
+
+import jetbrains.buildServer.clouds.CloudClientEx;
+import jetbrains.buildServer.clouds.CloudClientParameters;
+import jetbrains.buildServer.clouds.CloudErrorInfo;
+import jetbrains.buildServer.clouds.CloudImage;
+import jetbrains.buildServer.clouds.CloudInstance;
+import jetbrains.buildServer.clouds.CloudInstanceUserData;
+import jetbrains.buildServer.log.Loggers;
+import jetbrains.buildServer.serverSide.AgentDescription;
+import jetbrains.buildServer.serverSide.BuildServerAdapter;
+import jetbrains.buildServer.serverSide.ServerPaths;
 
 public class OpenstackCloudClient extends BuildServerAdapter implements CloudClientEx {
-    @NotNull private static final Logger LOG = Logger.getInstance(Loggers.CLOUD_CATEGORY_ROOT);
-    @NotNull private final List<OpenstackCloudImage> cloudImages = new ArrayList<OpenstackCloudImage>();
-    @NotNull private final OpenstackApi openstackApi;
-    @Nullable private CloudErrorInfo errorInfo = null;
-    @Nullable private final Integer instanceCap;
+    @NotNull
+    private static final Logger LOG = Logger.getInstance(Loggers.CLOUD_CATEGORY_ROOT);
+    @NotNull
+    private final List<OpenstackCloudImage> cloudImages = new ArrayList<>();
+    @NotNull
+    private final OpenstackApi openstackApi;
+    @Nullable
+    private CloudErrorInfo errorInfo = null;
+    @Nullable
+    private final Integer instanceCap;
 
-    public OpenstackCloudClient(@NotNull final CloudClientParameters params, @NotNull ServerPaths serverPaths, @NotNull final ExecutorServiceFactory factory) {
+    public OpenstackCloudClient(@NotNull final CloudClientParameters params, @NotNull ServerPaths serverPaths,
+            @NotNull final ExecutorServiceFactory factory) {
 
         final String endpointUrl = params.getParameter(OpenstackCloudParameters.ENDPOINT_URL).trim();
         final String identity = params.getParameter(OpenstackCloudParameters.IDENTITY).trim();
@@ -40,46 +57,35 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         LOG.debug(String.format("Using the following YAML data: %s", rawYaml));
 
         Yaml yaml = new Yaml();
-        final Map<String, Map> map = (Map) yaml.load(rawYaml);
+        @SuppressWarnings("unchecked")
+        final Map<String, Map<String, String>> map = (Map<String, Map<String, String>>) yaml.load(rawYaml);
         final IdGenerator imageIdGenerator = new IdGenerator();
         final StringBuilder error = new StringBuilder();
 
-        for (Map.Entry<String, Map> entry : map.entrySet()) {
+        for (Map.Entry<String, Map<String, String>> entry : map.entrySet()) {
 
             final String imageName = entry.getKey().trim();
-            final String openstackImageName = entry.getValue().get("image").toString().trim();
-            final String flavorName = entry.getValue().get("flavor").toString().trim();
-            final String securityGroupName = entry.getValue().get("security_group").toString().trim();
-            final String keyPair = entry.getValue().get("key_pair").toString().trim();
-            final String networkName = entry.getValue().get("network").toString().trim();
-            final String userScriptPath = (String) entry.getValue().get("user_script");
+            final String openstackImageName = entry.getValue().get("image").trim();
+            final String flavorName = entry.getValue().get("flavor").trim();
+            final String securityGroupName = entry.getValue().get("security_group").trim();
+            final String keyPair = entry.getValue().get("key_pair").trim();
+            final String networkName = entry.getValue().get("network").trim();
+            final String userScriptPath = entry.getValue().get("user_script");
 
             String networkId = openstackApi.getNetworkIdByName(networkName);
-            CreateServerOptions options = new CreateServerOptions()
-                    .keyPairName(keyPair)
-                    .securityGroupNames(securityGroupName)
-                    .networks(networkId);
+            CreateServerOptions options = new CreateServerOptions().keyPairName(keyPair).securityGroupNames(securityGroupName).networks(networkId);
 
-            final String availabilityZone = (String) entry.getValue().get("availability_zone");
+            final String availabilityZone = entry.getValue().get("availability_zone");
             if (!Strings.isNullOrEmpty(availabilityZone)) {
                 options.availabilityZone(availabilityZone.trim());
             }
 
             LOG.debug(String.format(
-                "Adding cloud image: imageName=%s, openstackImageName=%s, flavorName=%s, securityGroupName=%s, keyPair=%s, networkName=%s, networkId=%s",
-                imageName, openstackImageName, flavorName, securityGroupName, keyPair, networkName, networkId
-            ));
+                    "Adding cloud image: imageName=%s, openstackImageName=%s, flavorName=%s, securityGroupName=%s, keyPair=%s, networkName=%s, networkId=%s",
+                    imageName, openstackImageName, flavorName, securityGroupName, keyPair, networkName, networkId));
 
-            final OpenstackCloudImage image = new OpenstackCloudImage(
-                    imageIdGenerator.next(),
-                    imageName,
-                    openstackApi,
-                    openstackImageName,
-                    flavorName,
-                    options,
-                    userScriptPath,
-                    serverPaths,
-                    factory.createExecutorService(imageName));
+            final OpenstackCloudImage image = new OpenstackCloudImage(imageIdGenerator.next(), imageName, openstackApi, openstackImageName,
+                    flavorName, options, userScriptPath, serverPaths, factory.createExecutorService(imageName));
 
             cloudImages.add(image);
 
@@ -93,7 +99,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     }
 
     @Nullable
-    public OpenstackCloudImage findImageById(@NotNull final String imageId) throws CloudException {
+    public OpenstackCloudImage findImageById(@NotNull final String imageId) {
         for (final OpenstackCloudImage image : getImages()) {
             if (image.getId().equals(imageId)) {
                 return image;
@@ -105,10 +111,11 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     @Nullable
     public OpenstackCloudInstance findInstanceByAgent(@NotNull final AgentDescription agentDescription) {
         final Map<String, String> configParams = agentDescription.getConfigurationParameters();
-        if (!configParams.containsValue(OpenstackCloudParameters.CLOUD_TYPE)) return null;
+        if (!configParams.containsValue(OpenstackCloudParameters.CLOUD_TYPE))
+            return null;
 
-        for (OpenstackCloudImage image: getImages()) {
-            for (OpenstackCloudInstance instance: image.getInstances()) {
+        for (OpenstackCloudImage image : getImages()) {
+            for (OpenstackCloudInstance instance : image.getInstances()) {
                 if (instance.getOpenstackInstanceId().equals(configParams.get(OpenstackCloudParameters.OPENSTACK_INSTANCE_ID))) {
                     return instance;
                 }
@@ -118,7 +125,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     }
 
     @NotNull
-    public Collection<? extends OpenstackCloudImage> getImages() throws CloudException {
+    public Collection<? extends OpenstackCloudImage> getImages() {
         return Collections.unmodifiableList(cloudImages);
     }
 
@@ -130,26 +137,25 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     public boolean canStartNewInstance(@NotNull final CloudImage image) {
         if (instanceCap == null) {
             return true;
-        } else {
-            int i = 0;
-            for (final OpenstackCloudImage img : getImages()) {
-                i += img.getInstances().size();
-            }
-            return i < instanceCap;
         }
+        int i = 0;
+        for (final OpenstackCloudImage img : getImages()) {
+            i += img.getInstances().size();
+        }
+        return i < instanceCap;
     }
 
     @NotNull
-    public CloudInstance startNewInstance(@NotNull final CloudImage image, @NotNull final CloudInstanceUserData data) throws QuotaException {
-        return ((OpenstackCloudImage)image).startNewInstance(data);
+    public CloudInstance startNewInstance(@NotNull final CloudImage image, @NotNull final CloudInstanceUserData data) {
+        return ((OpenstackCloudImage) image).startNewInstance(data);
     }
 
     public void restartInstance(@NotNull final CloudInstance instance) {
-        ((OpenstackCloudInstance)instance).restart();
+        ((OpenstackCloudInstance) instance).restart();
     }
 
     public void terminateInstance(@NotNull final CloudInstance instance) {
-        ((OpenstackCloudInstance)instance).terminate();
+        ((OpenstackCloudInstance) instance).terminate();
     }
 
     @Nullable
@@ -158,7 +164,8 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     }
 
     public void dispose() {
-        for (final OpenstackCloudImage image : getImages()) image.dispose();
+        for (final OpenstackCloudImage image : getImages())
+            image.dispose();
         cloudImages.clear();
     }
 }

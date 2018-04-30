@@ -1,42 +1,55 @@
 package jetbrains.buildServer.clouds.openstack;
 
-import com.jcabi.log.VerboseRunnable;
-import jetbrains.buildServer.clouds.*;
-import jetbrains.buildServer.serverSide.ServerPaths;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import com.jcabi.log.VerboseRunnable;
+
+import jetbrains.buildServer.clouds.CloudErrorInfo;
+import jetbrains.buildServer.clouds.CloudImage;
+import jetbrains.buildServer.clouds.CloudInstanceUserData;
+import jetbrains.buildServer.clouds.InstanceStatus;
+import jetbrains.buildServer.serverSide.ServerPaths;
 
 public class OpenstackCloudImage implements CloudImage {
-    @NotNull private final String imageId;
-    @NotNull private final String imageName;
-    @NotNull private final String openstackImageName;
-    @NotNull private final String flavorName;
-    @NotNull private final OpenstackApi openstackApi;
-    @NotNull private final CreateServerOptions options;
-    @Nullable private final String userScriptPath;
-    @NotNull private final ServerPaths serverPaths;
-    @NotNull private final ScheduledExecutorService executor;
+    @NotNull
+    private final String imageId;
+    @NotNull
+    private final String imageName;
+    @NotNull
+    private final String openstackImageName;
+    @NotNull
+    private final String flavorName;
+    @NotNull
+    private final OpenstackApi openstackApi;
+    @NotNull
+    private final CreateServerOptions options;
+    @Nullable
+    private final String userScriptPath;
+    @NotNull
+    private final ServerPaths serverPaths;
+    @NotNull
+    private final ScheduledExecutorService executor;
 
-    @NotNull private final Map<String, OpenstackCloudInstance> instances = new ConcurrentHashMap<String, OpenstackCloudInstance>();
-    @NotNull private final IdGenerator instanceIdGenerator = new IdGenerator();
-    @Nullable private final CloudErrorInfo errorInfo;
+    @NotNull
+    private final Map<String, OpenstackCloudInstance> instances = new ConcurrentHashMap<>();
+    @NotNull
+    private final IdGenerator instanceIdGenerator = new IdGenerator();
+    @Nullable
+    private final CloudErrorInfo errorInfo;
 
-    public OpenstackCloudImage(@NotNull final String imageId,
-                               @NotNull final String imageName,
-                               @NotNull final OpenstackApi openstackApi,
-                               @NotNull final String openstackImageName,
-                               @NotNull final String flavorId,
-                               @NotNull final CreateServerOptions options,
-                               @Nullable final String userScriptPath,
-                               @NotNull final ServerPaths serverPaths,
-                               @NotNull final ScheduledExecutorService executor) {
+    public OpenstackCloudImage(@NotNull final String imageId, @NotNull final String imageName, @NotNull final OpenstackApi openstackApi,
+            @NotNull final String openstackImageName, @NotNull final String flavorId, @NotNull final CreateServerOptions options,
+            @Nullable final String userScriptPath, @NotNull final ServerPaths serverPaths, @NotNull final ScheduledExecutorService executor) {
         this.imageId = imageId;
         this.imageName = imageName;
         this.openstackApi = openstackApi;
@@ -47,17 +60,15 @@ public class OpenstackCloudImage implements CloudImage {
         this.serverPaths = serverPaths;
         this.executor = executor;
 
-        this.errorInfo = null;  //FIXME: need to use this, really.
+        this.errorInfo = null; // FIXME: need to use this, really.
 
-        this.executor.scheduleWithFixedDelay(new VerboseRunnable(new Runnable() {
-            public void run() {
-                final Collection<OpenstackCloudInstance> instances = (Collection<OpenstackCloudInstance>) getInstances();
-                for (OpenstackCloudInstance instance : instances) {
-                    instance.updateStatus();
-                    if (instance.getStatus() == InstanceStatus.STOPPED || instance.getStatus() == InstanceStatus.ERROR)
-                        forgetInstance(instance);
-                }
-            }}, true ), 3, 3, TimeUnit.SECONDS);
+        this.executor.scheduleWithFixedDelay(new VerboseRunnable(() -> {
+            for (OpenstackCloudInstance instance : getInstances()) {
+                instance.updateStatus();
+                if (instance.getStatus() == InstanceStatus.STOPPED || instance.getStatus() == InstanceStatus.ERROR)
+                    forgetInstance(instance);
+            }
+        }, true), 3, 3, TimeUnit.SECONDS);
     }
 
     @NotNull

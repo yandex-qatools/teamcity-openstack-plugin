@@ -1,19 +1,5 @@
 package jetbrains.buildServer.clouds.openstack;
 
-import com.google.common.base.Strings;
-import com.intellij.openapi.diagnostic.Logger;
-import jetbrains.buildServer.clouds.*;
-import jetbrains.buildServer.log.Loggers;
-import jetbrains.buildServer.serverSide.AgentDescription;
-import jetbrains.buildServer.serverSide.ServerPaths;
-import jetbrains.buildServer.util.ExceptionUtil;
-import jetbrains.buildServer.util.FileUtil;
-import org.jclouds.openstack.nova.v2_0.domain.Server;
-import org.jclouds.openstack.nova.v2_0.domain.ServerCreated;
-import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -22,20 +8,48 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jclouds.openstack.nova.v2_0.domain.Server;
+import org.jclouds.openstack.nova.v2_0.domain.ServerCreated;
+import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import com.google.common.base.Strings;
+import com.intellij.openapi.diagnostic.Logger;
+
+import jetbrains.buildServer.clouds.CloudConstants;
+import jetbrains.buildServer.clouds.CloudErrorInfo;
+import jetbrains.buildServer.clouds.CloudInstance;
+import jetbrains.buildServer.clouds.CloudInstanceUserData;
+import jetbrains.buildServer.clouds.InstanceStatus;
+import jetbrains.buildServer.log.Loggers;
+import jetbrains.buildServer.serverSide.AgentDescription;
+import jetbrains.buildServer.serverSide.ServerPaths;
+import jetbrains.buildServer.util.ExceptionUtil;
+import jetbrains.buildServer.util.FileUtil;
 
 public class OpenstackCloudInstance implements CloudInstance {
-    @NotNull private static final Logger LOG = Logger.getInstance(Loggers.CLOUD_CATEGORY_ROOT);
-    @NotNull private final String instanceId;
-    @NotNull private final ServerPaths serverPaths;
-    @NotNull private final OpenstackCloudImage cloudImage;
-    @NotNull private final Date startDate;
-    @Nullable private volatile CloudErrorInfo errorInfo;
-    @Nullable private ServerCreated serverCreated;
-    @NotNull private final ScheduledExecutorService executor;
+    @NotNull
+    private static final Logger LOG = Logger.getInstance(Loggers.CLOUD_CATEGORY_ROOT);
+    @NotNull
+    private final String instanceId;
+    @NotNull
+    private final ServerPaths serverPaths;
+    @NotNull
+    private final OpenstackCloudImage cloudImage;
+    @NotNull
+    private final Date startDate;
+    @Nullable
+    private volatile CloudErrorInfo errorInfo;
+    @Nullable
+    private ServerCreated serverCreated;
+    @NotNull
+    private final ScheduledExecutorService executor;
 
-    private final AtomicReference<InstanceStatus> status = new AtomicReference<InstanceStatus>(InstanceStatus.SCHEDULED_TO_START);
+    private final AtomicReference<InstanceStatus> status = new AtomicReference<>(InstanceStatus.SCHEDULED_TO_START);
 
-    public OpenstackCloudInstance(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId, @NotNull ServerPaths serverPaths, @NotNull ScheduledExecutorService executor) {
+    public OpenstackCloudInstance(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId, @NotNull ServerPaths serverPaths,
+            @NotNull ScheduledExecutorService executor) {
         this.cloudImage = image;
         this.instanceId = instanceId;
         this.serverPaths = serverPaths;
@@ -51,34 +65,33 @@ public class OpenstackCloudInstance implements CloudInstance {
             if (server != null) {
                 Server.Status currentStatus = server.getStatus();
                 LOG.debug(String.format("Getting instance status from openstack for %s, result is %s", getName(), currentStatus));
-                switch(currentStatus) {
-                    case ACTIVE:
-                        setStatus(InstanceStatus.RUNNING);
-                        break;
-                    case ERROR:
-                        setStatus(InstanceStatus.ERROR);
-                        terminate();
-                        break;
-                    case SUSPENDED:
-                    case PAUSED:
-                    case DELETED:
-                    case SOFT_DELETED:
-                    case UNKNOWN:
-                    case UNRECOGNIZED:
-                    case SHUTOFF:
-                    case SHELVED:
-                    case SHELVED_OFFLOADED:
-                    case STOPPED:
-                        setStatus(InstanceStatus.STOPPED);
-                        break;
-                    default:
-                        break;
+                switch (currentStatus) {
+                case ACTIVE:
+                    setStatus(InstanceStatus.RUNNING);
+                    break;
+                case ERROR:
+                    setStatus(InstanceStatus.ERROR);
+                    terminate();
+                    break;
+                case SUSPENDED:
+                case PAUSED:
+                case DELETED:
+                case SOFT_DELETED:
+                case UNKNOWN:
+                case UNRECOGNIZED:
+                case SHELVED:
+                case SHELVED_OFFLOADED:
+                case SHUTOFF:
+                    setStatus(InstanceStatus.STOPPED);
+                    break;
+                default:
+                    break;
                 }
             } else {
                 setStatus(InstanceStatus.STOPPED);
             }
         } else {
-            LOG.debug(String.format("Will skip status updating cause instance is not created yet"));
+            LOG.debug("Will skip status updating cause instance is not created yet");
         }
     }
 
@@ -133,8 +146,8 @@ public class OpenstackCloudInstance implements CloudInstance {
 
     public boolean containsAgent(@NotNull final AgentDescription agentDescription) {
         final Map<String, String> configParams = agentDescription.getConfigurationParameters();
-        return configParams.containsValue(OpenstackCloudParameters.CLOUD_TYPE) &&
-                getOpenstackInstanceId().equals(configParams.get(OpenstackCloudParameters.OPENSTACK_INSTANCE_ID));
+        return configParams.containsValue(OpenstackCloudParameters.CLOUD_TYPE)
+                && getOpenstackInstanceId().equals(configParams.get(OpenstackCloudParameters.OPENSTACK_INSTANCE_ID));
     }
 
     public void start(@NotNull final CloudInstanceUserData data) {
@@ -144,7 +157,7 @@ public class OpenstackCloudInstance implements CloudInstance {
     }
 
     public void restart() {
-        throw new UnsupportedOperationException("Restart openstack instance operation is not supported yet" );
+        throw new UnsupportedOperationException("Restart openstack instance operation is not supported yet");
     }
 
     public void terminate() {
@@ -169,8 +182,20 @@ public class OpenstackCloudInstance implements CloudInstance {
 
     private class StartAgentCommand implements Runnable {
         private final CloudInstanceUserData userData;
+
         public StartAgentCommand(@NotNull final CloudInstanceUserData data) {
             this.userData = data;
+        }
+
+        private byte[] readUserScriptFile(File userScriptFile) {
+            try {
+                String userScript = FileUtil.readText(userScriptFile);
+                // this is userScript actually, but CreateServerOptionscalls it userData
+                return userScript.trim().getBytes(StandardCharsets.UTF_8);
+            } catch (IOException e) {
+                LOG.error(e.getMessage());
+            }
+            return new byte[] {};
         }
 
         public void run() {
@@ -188,13 +213,7 @@ public class OpenstackCloudInstance implements CloudInstance {
                 if (!Strings.isNullOrEmpty(userScriptPath)) {
                     File pluginData = serverPaths.getPluginDataDirectory();
                     File userScriptFile = new File(new File(pluginData, OpenstackCloudParameters.PLUGIN_SHORT_NAME), userScriptPath);
-                    try {
-                        String userScript = FileUtil.readText(userScriptFile);
-                        options.userData(userScript.trim().getBytes(StandardCharsets.UTF_8)) // this is userScript actually, but CreateServerOptions calls it userData
-                                .configDrive(true);
-                    } catch (IOException e) {
-                        LOG.error(e.getMessage());
-                    }
+                    options.userData(readUserScriptFile(userScriptFile)).configDrive(true);
                 }
 
                 LOG.debug(String.format("Creating openstack instance with flavorId=%s, imageId=%s, options=%s", flavorId, openstackImageId, options));
