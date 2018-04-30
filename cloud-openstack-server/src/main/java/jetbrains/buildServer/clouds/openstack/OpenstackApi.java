@@ -29,23 +29,29 @@ public class OpenstackApi {
         // For http content debug during unit tests,
         // - Fill Constants.PROPERTY_LOGGER_WIRE_LOG_SENSITIVE_INFO to true in overrides properties
         // - Add '.modules(ImmutableSet.of(new SLF4JLoggingModule()))' in two ContextBuilder
+        // - Update log level to 'DEBUG' in 'log4j.xml'.
 
         this.zone = zone;
 
         final Properties overrides = new Properties();
         final String keyStoneVersion = getKeystoneVersion(endpointUrl);
-        final String[] identityArray = getIdentityArray(identity);
-        overrides.setProperty(KeystoneProperties.KEYSTONE_VERSION, keyStoneVersion);
-        overrides.setProperty(LocationConstants.PROPERTY_ZONES, zone);
-        overrides.setProperty(KeystoneProperties.SCOPE, "project:" + identityArray[1]);
+        final OpenstackIdentity identityObject = new OpenstackIdentity(identity, keyStoneVersion);
+        overrides.put(KeystoneProperties.KEYSTONE_VERSION, keyStoneVersion);
+        overrides.put(LocationConstants.PROPERTY_ZONES, zone);
 
-        neutronApi = ContextBuilder.newBuilder(new NeutronApiMetadata())
-                .credentials(getCredentialsFromIdentity(identityArray, keyStoneVersion), password).endpoint(endpointUrl).overrides(overrides)
-                .buildApi(NeutronApi.class);
+        if (!StringUtil.isEmpty(identityObject.getTenant())) {
+            // Only for keystone v3, for v2 'tenant' is part of Credentials (cf. OpenstackIdentity)
+            overrides.put(KeystoneProperties.SCOPE, "project:" + identityObject.getTenant());
+        }
+        if (!StringUtil.isEmpty(identityObject.getTenantDomain())) {
+            overrides.put(KeystoneProperties.TENANT_ID, identityObject.getTenantDomain());
+        }
 
-        novaApi = ContextBuilder.newBuilder(new NovaApiMetadata()).endpoint(endpointUrl)
-                .credentials(getCredentialsFromIdentity(identityArray, keyStoneVersion), password).overrides(overrides).buildApi(NovaApi.class);
+        neutronApi = ContextBuilder.newBuilder(new NeutronApiMetadata()).credentials(identityObject.getCredendials(), password).endpoint(endpointUrl)
+                .overrides(overrides).buildApi(NeutronApi.class);
 
+        novaApi = ContextBuilder.newBuilder(new NovaApiMetadata()).endpoint(endpointUrl).credentials(identityObject.getCredendials(), password)
+                .overrides(overrides).buildApi(NovaApi.class);
     }
 
     public String getImageIdByName(String name) {
@@ -97,38 +103,4 @@ public class OpenstackApi {
         return def;
     }
 
-    /**
-     * Get credential identity for corresponding keystone version:<br/>
-     * - v2: tenant:user<br/>
-     * - v3: domain:user<br/>
-     * 
-     * @param identity Identity array (should contains 'domain:tenant:user')
-     * @param keystoneVersion Keystone version
-     * @return The credentials identity
-     */
-    protected static String getCredentialsFromIdentity(String[] identity, String keystoneVersion) {
-        if ("2".equals(keystoneVersion)) {
-            return identity[1] + ":" + identity[2];
-        }
-        return identity[0] + ":" + identity[2];
-    }
-
-    /**
-     * Get identity as array (split identity string with using :), using 'default' if values not filled
-     * 
-     * @param identity Identity string (domain:tenant:user)
-     * @return Array
-     */
-    protected static String[] getIdentityArray(String identity) {
-        final String[] res = new String[] { "default", "default", "" };
-        if (StringUtil.isEmpty(identity)) {
-            return res;
-        }
-        String[] tmp = identity.split(":");
-        int diff = res.length - tmp.length;
-        for (int i = 0; i < tmp.length; i++) {
-            res[i + diff] = tmp[i];
-        }
-        return res;
-    }
 }
