@@ -1,0 +1,6 @@
+openstack-test-teamcity-plugin:
+  image: anyImage
+  flavor: m1.small
+  network: networkProviderName
+  security_group: default
+  key_pair: yourKey

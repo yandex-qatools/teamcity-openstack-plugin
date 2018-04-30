@@ -26,59 +26,65 @@ import jetbrains.buildServer.web.openapi.PluginDescriptor;
 
 public class OpenstackCloudClientTest {
 
-    final private static String TEST_KEY_V2_URL = "test.v2.url";
-    final private static String TEST_KEY_V2_IDENTITY = "test.v2.identity";
-    final private static String TEST_KEY_V2_PASSWORD = "test.v2.password";
-    final private static String TEST_KEY_V2_REGION = "test.v2.region";
-    final private static String TEST_KEY_V3_URL = "test.v3.url";
-    final private static String TEST_KEY_V3_IDENTITY = "test.v3.identity";
-    final private static String TEST_KEY_V3_PASSWORD = "test.v3.password";
-    final private static String TEST_KEY_V3_REGION = "test.v3.region";
+    final private static String TEST_KEY_URL = "test.url";
+    final private static String TEST_KEY_IDENTITY = "test.identity";
+    final private static String TEST_KEY_PASSWORD = "test.password";
+    final private static String TEST_KEY_REGION = "test.region";
 
-    final private static String TEST_FILE_PROPERTIES = "/test.properties";
-    final private static String TEST_FILE_YAML = "/test.yml";
-    final private static String[] TEST_KEYS_LIST = new String[] { TEST_KEY_V2_URL, TEST_KEY_V2_IDENTITY, TEST_KEY_V2_PASSWORD, TEST_KEY_V2_REGION,
-            TEST_KEY_V3_URL, TEST_KEY_V3_IDENTITY, TEST_KEY_V3_PASSWORD, TEST_KEY_V3_REGION };
+    final private static String[] TEST_KEYS_LIST = new String[] { TEST_KEY_URL, TEST_KEY_IDENTITY, TEST_KEY_PASSWORD, TEST_KEY_REGION, };
+
+    static enum OpenStackVersion {
+        TWO(2), THREE(3);
+        private final int value;
+
+        private OpenStackVersion(int value) {
+            this.value = value;
+        }
+    };
 
     @Test
     public void testNoImage() throws Exception {
-        Properties props = getTestProps();
-        OpenstackCloudClient client = getClient(props.getProperty(TEST_KEY_V2_URL), props.getProperty(TEST_KEY_V2_IDENTITY),
-                props.getProperty(TEST_KEY_V2_PASSWORD), props.getProperty(TEST_KEY_V2_REGION), null);
+        Properties props = getTestProps(OpenStackVersion.TWO);
+        OpenstackCloudClient client = getClient(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY),
+                props.getProperty(TEST_KEY_PASSWORD), props.getProperty(TEST_KEY_REGION), null);
         Assert.assertEquals("No images specified", client.getErrorInfo().getMessage());
     }
 
     @Test
     public void testV2() throws Exception {
-        Properties props = getTestProps();
-        testSubSimple(props.getProperty(TEST_KEY_V2_URL), props.getProperty(TEST_KEY_V2_IDENTITY), props.getProperty(TEST_KEY_V2_PASSWORD),
-                props.getProperty(TEST_KEY_V2_REGION), getTestYaml());
+        Properties props = getTestProps(OpenStackVersion.TWO);
+        testSubSimple(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY), props.getProperty(TEST_KEY_PASSWORD),
+                props.getProperty(TEST_KEY_REGION), getTestYaml(OpenStackVersion.TWO));
     }
 
     @Test
     public void testV3() throws Exception {
-        Properties props = getTestProps();
-        testSubSimple(props.getProperty(TEST_KEY_V3_URL), props.getProperty(TEST_KEY_V3_IDENTITY), props.getProperty(TEST_KEY_V3_PASSWORD),
-                props.getProperty(TEST_KEY_V3_REGION), getTestYaml());
+        Properties props = getTestProps(OpenStackVersion.THREE);
+        testSubSimple(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY), props.getProperty(TEST_KEY_PASSWORD),
+                props.getProperty(TEST_KEY_REGION), getTestYaml(OpenStackVersion.THREE));
     }
 
-    private Properties getTestProps() throws IOException {
+    private Properties getTestProps(OpenStackVersion version) throws IOException {
+        final String file = "test.v" + version.value + ".properties";
+
         Properties props = new Properties();
-        InputStream is = this.getClass().getResourceAsStream(TEST_FILE_PROPERTIES);
+        InputStream is = this.getClass().getResourceAsStream("/" + file);
         if (is == null) {
-            throw new UnsupportedOperationException(String.format("You should provide a '%s' file in test resrources with keys: %s",
-                    TEST_FILE_PROPERTIES, StringUtil.join(TEST_KEYS_LIST, " / ")));
+            throw new UnsupportedOperationException(
+                    String.format("You should provide a '%s' file in test resrources with keys: %s", file, StringUtil.join(TEST_KEYS_LIST, " / ")));
         }
         props.load(is);
         return props;
     }
 
-    private String getTestYaml() throws IOException {
+    private String getTestYaml(OpenStackVersion version) throws IOException {
+        final String file = "test.v" + version.value + ".yml";
+
         // Old 'commons-io', but provided by TeamCity 'server-api' ... this is just for UT
-        InputStream is = this.getClass().getResourceAsStream(TEST_FILE_YAML);
+        InputStream is = this.getClass().getResourceAsStream("/" + file);
         if (is == null) {
             throw new UnsupportedOperationException(
-                    String.format("You should provide a '%s' file in test resrources containg OpenStack image descriptor", TEST_FILE_YAML));
+                    String.format("You should provide a '%s' file in test resrources containg OpenStack image descriptor", file));
         }
         @SuppressWarnings("unchecked")
         List<String> list = IOUtils.readLines(is);
