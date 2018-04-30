@@ -12,7 +12,6 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jmock.Expectations;
@@ -67,7 +66,7 @@ public class OpenstackAgentPropertiesTest {
                 allowing(agentConfig).addConfigurationParameter(with(any(String.class)), with(any(String.class)));
                 allowing(agentConfig).setName(with(any(String.class)));
                 allowing(agentConfig).getConfigurationParameters();
-                if (MapUtils.isNotEmpty(parameters)) {
+                if (parameters != null && !parameters.isEmpty()) {
                     will(returnValue(parameters));
                 }
             }

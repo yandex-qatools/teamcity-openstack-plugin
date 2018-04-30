@@ -33,7 +33,7 @@
             <plugin>
                 <groupId>com.google.code.maven-replacer-plugin</groupId>
                 <artifactId>replacer</artifactId>
-                <version>1.5.2</version>
+                <version>1.5.3</version>
                 <executions>
                     <execution>
                         <phase>process-sources</phase>
@@ -48,7 +48,7 @@
                     <replacements>
                         <replacement>
                             <token>@Version@</token>
-                            <value>snapshot-${maven.build.timestamp}</value>
+                            <value>${project.version}</value>
                         </replacement>
                     </replacements>
                 </configuration>
