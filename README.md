@@ -39,21 +39,25 @@ The *Identity* defines at minimum the *tenant* and *user* informations, but coul
 
 The Identity is a 2-4 blocks string in this order: `[domain_tenant:]tenant:[domain_user:]user` (Warning: Priority given to *domain_user* for a 3 blocks strings).
 
-*Samples* (on JSon produced on https://openstack.hostname.com/v3/auth/tokens URL):
+#### Samples
 
-`myTenant:foo`: 
+Below some samples from *Identity* field to JSon produced on https://openstack.hostname.com/v3/auth/tokens URL.
+
+##### myTenant:foo
 
 ```
 {"auth":{"identity":{"methods":["password"],"password":{"user":{"name":"foo","domain":{},"password":"***"}}},"scope":{"project":{"name":"myTenant","domain":{}}}}}
 ```
 
-`myTenant:ldap:foo` (*domain_user* is used for both domains): 
+##### myTenant:ldap:foo 
+
+NB: *domain_user* is used for both domains.
 
 ```
 {"auth":{"identity":{"methods":["password"],"password":{"user":{"name":"foo","domain":{"name":"ldap"},"password":"***"}}},"scope":{"project":{"name":"myTenant","domain":{"name":"ldap"}}}}}
 ```
 
-`domainTenant:myTenant:ldap:foo`: 
+##### myTenantDomain:myTenant:ldap:foo 
 
 ```
 {"auth":{"identity":{"methods":["password"],"password":{"user":{"name":"foo","domain":{"name":"ldap"},"password":"***"}}},"scope":{"project":{"name":"myTenant","domain":{"id":"myTenantDomain"}}}}}
