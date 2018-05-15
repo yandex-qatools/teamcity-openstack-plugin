@@ -51,6 +51,22 @@ public class OpenstackCloudClientTest {
     }
 
     @Test
+    public void testOnlyComments() throws Exception {
+        Properties props = getTestProps(OpenStackVersion.TWO);
+        OpenstackCloudClient client = getClient(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY),
+                props.getProperty(TEST_KEY_PASSWORD), props.getProperty(TEST_KEY_REGION), "#A comment");
+        Assert.assertEquals("No images specified (perhaps only comments)", client.getErrorInfo().getMessage());
+    }
+
+    @Test
+    public void testNoParams() throws Exception {
+        Properties props = getTestProps(OpenStackVersion.TWO);
+        OpenstackCloudClient client = getClient(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY),
+                props.getProperty(TEST_KEY_PASSWORD), props.getProperty(TEST_KEY_REGION), "some-image:");
+        Assert.assertEquals("No parameters defined for image: some-image", client.getErrorInfo().getMessage());
+    }
+
+    @Test
     public void testV2() throws Exception {
         Properties props = getTestProps(OpenStackVersion.TWO);
         testSubSimple(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY), props.getProperty(TEST_KEY_PASSWORD),
@@ -106,7 +122,8 @@ public class OpenstackCloudClientTest {
         } finally {
             if (instance != null) {
                 client.terminateInstance(instance);
-                waitInstanceStatus(instance, InstanceStatus.STOPPED, 5000, InstanceStatus.SCHEDULED_TO_STOP, InstanceStatus.STOPPING);
+                waitInstanceStatus(instance, InstanceStatus.STOPPED, 5000, InstanceStatus.RUNNING, InstanceStatus.SCHEDULED_TO_STOP,
+                        InstanceStatus.STOPPING);
             }
         }
     }

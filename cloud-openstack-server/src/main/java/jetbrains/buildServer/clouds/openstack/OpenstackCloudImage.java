@@ -21,6 +21,9 @@ import jetbrains.buildServer.clouds.InstanceStatus;
 import jetbrains.buildServer.serverSide.ServerPaths;
 
 public class OpenstackCloudImage implements CloudImage {
+
+    @NotNull
+    private final OpenstackApi openstackApi;
     @NotNull
     private final String imageId;
     @NotNull
@@ -30,7 +33,7 @@ public class OpenstackCloudImage implements CloudImage {
     @NotNull
     private final String flavorName;
     @NotNull
-    private final OpenstackApi openstackApi;
+    private final boolean autoFloatingIp;
     @NotNull
     private final CreateServerOptions options;
     @Nullable
@@ -47,14 +50,16 @@ public class OpenstackCloudImage implements CloudImage {
     @Nullable
     private final CloudErrorInfo errorInfo;
 
-    public OpenstackCloudImage(@NotNull final String imageId, @NotNull final String imageName, @NotNull final OpenstackApi openstackApi,
-            @NotNull final String openstackImageName, @NotNull final String flavorId, @NotNull final CreateServerOptions options,
-            @Nullable final String userScriptPath, @NotNull final ServerPaths serverPaths, @NotNull final ScheduledExecutorService executor) {
+    public OpenstackCloudImage(@NotNull final OpenstackApi openstackApi, @NotNull final String imageId, @NotNull final String imageName,
+            @NotNull final String openstackImageName, @NotNull final String flavorId, @NotNull boolean autoFloatingIp,
+            @NotNull final CreateServerOptions options, @Nullable final String userScriptPath, @NotNull final ServerPaths serverPaths,
+            @NotNull final ScheduledExecutorService executor) {
+        this.openstackApi = openstackApi;
         this.imageId = imageId;
         this.imageName = imageName;
-        this.openstackApi = openstackApi;
         this.openstackImageName = openstackImageName;
         this.flavorName = flavorId;
+        this.autoFloatingIp = autoFloatingIp;
         this.options = options;
         this.userScriptPath = userScriptPath;
         this.serverPaths = serverPaths;
@@ -72,8 +77,16 @@ public class OpenstackCloudImage implements CloudImage {
     }
 
     @NotNull
-    public ServerApi getNovaApi() {
-        return openstackApi.getNovaApi();
+    public ServerApi getNovaServerApi() {
+        return openstackApi.getNovaServerApi();
+    }
+
+    public String getFloatingIpAvailable() {
+        return openstackApi.getFloatingIpAvailable();
+    }
+
+    public void associateFloatingIp(String serverId, String ip) {
+        openstackApi.associateFloatingIp(serverId, ip);
     }
 
     private void forgetInstance(@NotNull final OpenstackCloudInstance instance) {
@@ -115,9 +128,14 @@ public class OpenstackCloudImage implements CloudImage {
         return this.flavorName;
     }
 
+    @NotNull
+    public boolean isAutoFloatingIp() {
+        return this.autoFloatingIp;
+    }
+
     @Nullable
     public String getUserScriptPath() {
-        return userScriptPath;
+        return this.userScriptPath;
     }
 
     @NotNull

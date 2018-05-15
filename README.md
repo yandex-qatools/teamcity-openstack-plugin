@@ -29,6 +29,19 @@ Once you have created a cloud profile in TeamCity with one or several images, Te
 If for a queued build there are no regular non-cloud agents available, TeamCity will find a matching cloud image with a compatible agent and start a new instance for the image. After that, a virtual agent acts as a regular agent.
 You can specify idle time on the agent cloud profile, after which the instance should be terminated or stopped, in case you have an EBS-based instance.
 
+### Agent images YAML parameters
+
+| **Property**        | **Required** | **Description** |
+|---------------------|--------------|-----------------|
+| *image*             | true         | [Image](https://docs.openstack.org/glance/latest/admin/manage-images.html), ex: `ubuntu_16.04` |
+| *flavor*            | true         | [Flavor](https://docs.openstack.org/horizon/latest/admin/manage-flavors.html), ex: `m1.medium` |
+| *network*           | true         | [Network](https://developer.openstack.org/api-ref/network/v2/index.html#general-api-overview), ex: `VLAN` |
+| *security_group*    | true         | [Security group](https://docs.openstack.org/nova/latest/admin/security-groups.html), ex: `default` |
+| *key_pair*          | false        | [Key pair](https://docs.openstack.org/horizon/latest/user/configure-access-and-security-for-instances.html), ex: `my-key` ; required for SSH connection on created instances (like TeamCity Agent Push feature) |
+| *auto_floating_ip*  | false        | Boolean (`false` by default) for [floating ip](https://docs.openstack.org/ocata/user-guide/cli-manage-ip-addresses.html) association ; first from pool used |
+| *user_script*       | false        | Script executed on instance start |
+| *availability_zone* | false        | Region for server instance (if not the global configured)
+
 ### OpenStack v2 Identity
 
 The *Identity* defines the tenant/project and username, like: `tenant:user`
@@ -83,6 +96,7 @@ This usage is mainly designed for instantiate some TeamCity agent(s) on an Opens
 ## Build and Tests
 
 1. clone current repository to your local computer
+
 2. Provides 4 test files in *server* classpath (ex: `cloud-openstack-server/src/test/resources`) with content:
 
 ```
@@ -122,4 +136,5 @@ openstack-test-teamcity-plugin:
 ```  
 
 3. run `mvn clean package` (if OpenStack test endpoint requires trustStore certificate not in JVM used for test, add `-Djavax.net.ssl.trustStore=/path/to/cacerts`)
-4. install resulted *.zip file to teamcity server
+
+4. install resulted *cloud-openstack.zip* plugin file to TeamCity server

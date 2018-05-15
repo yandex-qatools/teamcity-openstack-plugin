@@ -8,24 +8,31 @@ import org.apache.log4j.spi.LoggingEvent;
 
 public class Lo4jBeanAppender extends WriterAppender {
 
+    /** Logger. Multithread usage => synchronized usage (simply solution for UT) */
     private static List<String> logs = new ArrayList<>();
 
     @Override
     public void append(LoggingEvent event) {
-        logs.add("[" + event.getLevel().toString() + "] " + event.getMessage().toString());
+        synchronized (logs) {
+            logs.add("[" + event.getLevel().toString() + "] " + event.getMessage().toString());
+        }
     }
 
     public static void clear() {
-        logs.clear();
+        synchronized (logs) {
+            logs.clear();
+        }
     }
 
     public static boolean contains(String string) {
-        for (String s : logs) {
-            if (s.contains(string)) {
-                return true;
+        synchronized (logs) {
+            for (String s : logs) {
+                if (s.contains(string)) {
+                    return true;
+                }
             }
+            return false;
         }
-        return false;
     }
 
     public static boolean isEmpty() {

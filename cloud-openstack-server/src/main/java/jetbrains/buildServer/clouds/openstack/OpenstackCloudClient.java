@@ -13,6 +13,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import com.google.common.base.Strings;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.util.ObjectUtils;
 
 import jetbrains.buildServer.clouds.CloudClientEx;
 import jetbrains.buildServer.clouds.CloudClientParameters;
@@ -24,6 +25,7 @@ import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.BuildServerAdapter;
 import jetbrains.buildServer.serverSide.ServerPaths;
+import jetbrains.buildServer.util.StringUtil;
 
 public class OpenstackCloudClient extends BuildServerAdapter implements CloudClientEx {
     @NotNull
@@ -57,20 +59,28 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         LOG.debug(String.format("Using the following YAML data: %s", rawYaml));
 
         Yaml yaml = new Yaml();
-        @SuppressWarnings("unchecked")
-        final Map<String, Map<String, String>> map = (Map<String, Map<String, String>>) yaml.load(rawYaml);
-        final IdGenerator imageIdGenerator = new IdGenerator();
+        final Map<String, Map<String, String>> map = yaml.load(rawYaml);
+        if (map == null || map.isEmpty()) {
+            errorInfo = new CloudErrorInfo("No images specified (perhaps only comments)");
+            return;
+        }
+
         final StringBuilder error = new StringBuilder();
-
+        final IdGenerator imageIdGenerator = new IdGenerator();
         for (Map.Entry<String, Map<String, String>> entry : map.entrySet()) {
-
             final String imageName = entry.getKey().trim();
-            final String openstackImageName = entry.getValue().get("image").trim();
-            final String flavorName = entry.getValue().get("flavor").trim();
-            final String securityGroupName = entry.getValue().get("security_group").trim();
-            final String keyPair = entry.getValue().get("key_pair").trim();
-            final String networkName = entry.getValue().get("network").trim();
+            if (entry.getValue() == null) {
+                errorInfo = new CloudErrorInfo(String.format("No parameters defined for image: %s", imageName));
+                return;
+            }
+            final String openstackImageName = StringUtil.trim(entry.getValue().get("image"));
+            final String flavorName = StringUtil.trim(entry.getValue().get("flavor"));
+            final String networkName = StringUtil.trim(entry.getValue().get("network"));
+            final String securityGroupName = StringUtil.trim(entry.getValue().get("security_group"));
+            final String keyPair = StringUtil.trim(entry.getValue().get("key_pair"));
             final String userScriptPath = entry.getValue().get("user_script");
+            Boolean autoFloatingIp = (Boolean) (Object) entry.getValue().get("auto_floating_ip"); // Evil, but Yaml parse Boolean only for this
+            autoFloatingIp = ObjectUtils.chooseNotNull(autoFloatingIp, false); // Can be null if not defined
 
             String networkId = openstackApi.getNetworkIdByName(networkName);
             CreateServerOptions options = new CreateServerOptions().keyPairName(keyPair).securityGroupNames(securityGroupName).networks(networkId);
@@ -81,11 +91,11 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
             }
 
             LOG.debug(String.format(
-                    "Adding cloud image: imageName=%s, openstackImageName=%s, flavorName=%s, securityGroupName=%s, keyPair=%s, networkName=%s, networkId=%s",
-                    imageName, openstackImageName, flavorName, securityGroupName, keyPair, networkName, networkId));
+                    "Adding cloud image: imageName=%s, openstackImageName=%s, flavorName=%s, networkName=%s, networkId=%s, securityGroupName=%s, keyPair=%s, floatingIp=%s",
+                    imageName, openstackImageName, flavorName, networkName, networkId, securityGroupName, keyPair, autoFloatingIp));
 
-            final OpenstackCloudImage image = new OpenstackCloudImage(imageIdGenerator.next(), imageName, openstackApi, openstackImageName,
-                    flavorName, options, userScriptPath, serverPaths, factory.createExecutorService(imageName));
+            final OpenstackCloudImage image = new OpenstackCloudImage(openstackApi, imageIdGenerator.next(), imageName, openstackImageName,
+                    flavorName, autoFloatingIp, options, userScriptPath, serverPaths, factory.createExecutorService(imageName));
 
             cloudImages.add(image);
 
@@ -111,9 +121,9 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     @Nullable
     public OpenstackCloudInstance findInstanceByAgent(@NotNull final AgentDescription agentDescription) {
         final Map<String, String> configParams = agentDescription.getConfigurationParameters();
-        if (!configParams.containsValue(OpenstackCloudParameters.CLOUD_TYPE))
+        if (!configParams.containsValue(OpenstackCloudParameters.CLOUD_TYPE)) {
             return null;
-
+        }
         for (OpenstackCloudImage image : getImages()) {
             for (OpenstackCloudInstance instance : image.getInstances()) {
                 if (instance.getOpenstackInstanceId().equals(configParams.get(OpenstackCloudParameters.OPENSTACK_INSTANCE_ID))) {

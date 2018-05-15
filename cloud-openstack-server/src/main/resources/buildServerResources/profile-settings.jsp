@@ -49,7 +49,8 @@
       &nbsp;&nbsp;&nbsp;&nbsp;flavor: m1.small<br/>
       &nbsp;&nbsp;&nbsp;&nbsp;network: my_openstack_network<br/>
       &nbsp;&nbsp;&nbsp;&nbsp;security_group: default<br/>
-      &nbsp;&nbsp;&nbsp;&nbsp;key_pair: my_username_keypair<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;*key_pair: my_username_keypair<br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;*auto_floating_ip: <i>boolean (default:false)</i><br/>
       &nbsp;&nbsp;&nbsp;&nbsp;*user_script: my_startup_script.sh<br/>
       &nbsp;&nbsp;&nbsp;&nbsp;*availability_zone: my_zone<br/>
       starred parameters are optional<br/>
