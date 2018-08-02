@@ -8,6 +8,7 @@ import org.jclouds.location.reference.LocationConstants;
 import org.jclouds.openstack.keystone.config.KeystoneProperties;
 import org.jclouds.openstack.neutron.v2.NeutronApi;
 import org.jclouds.openstack.neutron.v2.NeutronApiMetadata;
+import org.jclouds.openstack.neutron.v2.domain.FloatingIP;
 import org.jclouds.openstack.neutron.v2.domain.Network;
 import org.jclouds.openstack.nova.v2_0.NovaApi;
 import org.jclouds.openstack.nova.v2_0.NovaApiMetadata;
@@ -19,25 +20,25 @@ import jetbrains.buildServer.util.StringUtil;
 
 public class OpenstackApi {
 
-    private final String zone;
+    private final String region;
 
     private final NeutronApi neutronApi;
     private final NovaApi novaApi;
 
-    public OpenstackApi(String endpointUrl, String identity, String password, String zone) {
+    public OpenstackApi(String endpointUrl, String identity, String password, String region) {
 
         // For http content debug during unit tests,
         // - Fill Constants.PROPERTY_LOGGER_WIRE_LOG_SENSITIVE_INFO to true in overrides properties
         // - Add '.modules(ImmutableSet.of(new SLF4JLoggingModule()))' in two ContextBuilder
         // - Update log level to 'DEBUG' in 'log4j.xml'.
 
-        this.zone = zone;
+        this.region = region;
 
         final Properties overrides = new Properties();
         final String keyStoneVersion = getKeystoneVersion(endpointUrl);
         final OpenstackIdentity identityObject = new OpenstackIdentity(identity, keyStoneVersion);
         overrides.put(KeystoneProperties.KEYSTONE_VERSION, keyStoneVersion);
-        overrides.put(LocationConstants.PROPERTY_ZONES, zone);
+        overrides.put(LocationConstants.PROPERTY_ZONES, region);
 
         if (!StringUtil.isEmpty(identityObject.getTenant())) {
             // Only for keystone v3, for v2 'tenant' is part of Credentials (cf. OpenstackIdentity)
@@ -55,7 +56,7 @@ public class OpenstackApi {
     }
 
     public String getImageIdByName(String name) {
-        List<? extends Image> images = novaApi.getImageApi(zone).listInDetail().concat().toList();
+        List<? extends Image> images = novaApi.getImageApi(region).listInDetail().concat().toList();
         for (Image image : images) {
             if (image.getName().equals(name))
                 return image.getId();
@@ -64,7 +65,7 @@ public class OpenstackApi {
     }
 
     public String getFlavorIdByName(String name) {
-        List<? extends Flavor> flavors = novaApi.getFlavorApi(zone).listInDetail().concat().toList();
+        List<? extends Flavor> flavors = novaApi.getFlavorApi(region).listInDetail().concat().toList();
         for (Flavor flavor : flavors) {
             if (flavor.getName().equals(name))
                 return flavor.getId();
@@ -73,7 +74,7 @@ public class OpenstackApi {
     }
 
     public String getNetworkIdByName(String name) {
-        List<? extends Network> networks = neutronApi.getNetworkApi(zone).list().concat().toList();
+        List<? extends Network> networks = neutronApi.getNetworkApi(region).list().concat().toList();
         for (Network network : networks) {
             if (network.getName().equals(name))
                 return network.getId();
@@ -81,8 +82,21 @@ public class OpenstackApi {
         return null;
     }
 
-    public ServerApi getNovaApi() {
-        return novaApi.getServerApi(zone);
+    public ServerApi getNovaServerApi() {
+        return novaApi.getServerApi(region);
+    }
+
+    public void associateFloatingIp(String serverId, String ip) {
+        novaApi.getFloatingIPApi(region).get().addToServer(ip, serverId);
+    }
+
+    public String getFloatingIpAvailable() {
+        for (FloatingIP ip : neutronApi.getFloatingIPApi(region).list().concat().toList()) {
+            if (StringUtil.isEmpty(ip.getFixedIpAddress())) {
+                return ip.getFloatingIpAddress();
+            }
+        }
+        return null;
     }
 
     /**

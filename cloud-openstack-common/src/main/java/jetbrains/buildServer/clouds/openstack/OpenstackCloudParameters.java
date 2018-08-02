@@ -22,4 +22,5 @@ public final class OpenstackCloudParameters {
 
     public static final String OPENSTACK_INSTANCE_ID = "agent.cloud.uuid";
     public static final String AGENT_CLOUD_TYPE = "agent.cloud.type";
+    public static final String AGENT_CLOUD_IP = "agent.cloud.ip";
 }

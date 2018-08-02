@@ -8,12 +8,14 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpStatus;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.lib.legacy.ClassImposteriser;
@@ -65,6 +67,7 @@ public class OpenstackAgentPropertiesTest {
             {
                 allowing(agentConfig).addConfigurationParameter(with(any(String.class)), with(any(String.class)));
                 allowing(agentConfig).setName(with(any(String.class)));
+                allowing(agentConfig).addAlternativeAgentAddress(with(any(String.class)));
                 allowing(agentConfig).getConfigurationParameters();
                 if (parameters != null && !parameters.isEmpty()) {
                     will(returnValue(parameters));
@@ -100,8 +103,13 @@ public class OpenstackAgentPropertiesTest {
         URL url = new URL(props.getMetadataUrl());
         boolean openstackInstance = false;
         try {
-            url.openConnection().connect();
-            openstackInstance = true;
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.connect();
+            int code = connection.getResponseCode();
+            if (HttpStatus.SC_OK == code) {
+                openstackInstance = true;
+            }
         } catch (IOException e) {
             // No open stack instance
         }
@@ -109,8 +117,7 @@ public class OpenstackAgentPropertiesTest {
         if (openstackInstance) {
             Assert.assertTrue(Lo4jBeanAppender.contains("Detected Openstack instance. Will write parameters from metadata"));
         } else {
-            Assert.assertTrue(Lo4jBeanAppender.contains("It seems build-agent launched at non-Openstack instance."));
-            Assert.assertTrue(Lo4jBeanAppender.contains("Network is unreachable") || Lo4jBeanAppender.contains("No route to host"));
+            Assert.assertTrue(Lo4jBeanAppender.contains("It seems build-agent launched at non-Openstack instance"));
         }
     }
 
@@ -121,6 +128,18 @@ public class OpenstackAgentPropertiesTest {
         Assert.assertTrue(Lo4jBeanAppender.contains("Detected Openstack instance. Will write parameters from metadata"));
         Assert.assertTrue(Lo4jBeanAppender.contains("Setting agent.cloud.uuid to xxxx-yyyyy-zzzz"));
         Assert.assertTrue(Lo4jBeanAppender.contains("Setting name to openstack_test"));
+
+        Assert.assertFalse(Lo4jBeanAppender.contains("It seems build-agent launched at non-Openstack instance"));
+        Assert.assertFalse(Lo4jBeanAppender.contains("Network is unreachable"));
+        Assert.assertFalse(Lo4jBeanAppender.contains("Unknow problem on Openstack plugin"));
+    }
+
+    @Test
+    public void testUserData() throws IOException {
+        prepareAgentProperties("meta_data_userData.json").afterAgentConfigurationLoaded(null);
+
+        Assert.assertTrue(Lo4jBeanAppender.contains("Detected Openstack instance. Will write parameters from metadata"));
+        Assert.assertTrue(Lo4jBeanAppender.contains("Setting agent.cloud.ip to 192.168.42.42"));
 
         Assert.assertFalse(Lo4jBeanAppender.contains("It seems build-agent launched at non-Openstack instance"));
         Assert.assertFalse(Lo4jBeanAppender.contains("Network is unreachable"));
