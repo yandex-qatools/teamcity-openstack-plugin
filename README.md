@@ -1,4 +1,4 @@
-[![Build Status](https://teamcity.jetbrains.com/app/rest/builds/buildType:TeamCityThirdPartyPlugins_OpenStackCloudSupport_BuildSnapshotIntegration/statusIcon)](https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityThirdPartyPlugins_OpenStackCloudSupport_BuildSnapshotIntegration)
+[![Build Status](https://teamcity.jetbrains.com/app/rest/builds/buildType:TeamCityThirdPartyPlugins_OpenStackCloudSupport_BuildSnapshotIntegration/statusIcon)](https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityThirdPartyPlugins_OpenStackCloudSupport_BuildSnapshotIntegration) [![SonarCloud Status](https://sonarcloud.io/api/project_badges/measure?project=jetbrains.buildServer.clouds:cloud-openstack&metric=alert_status)](https://sonarcloud.io/dashboard?id=jetbrains.buildServer.clouds:cloud-openstack)
 
 # TeamCity Cloud Openstack plugin
 
