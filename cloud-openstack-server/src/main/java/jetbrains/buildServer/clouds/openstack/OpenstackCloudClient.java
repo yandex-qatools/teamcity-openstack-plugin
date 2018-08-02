@@ -174,8 +174,9 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     }
 
     public void dispose() {
-        for (final OpenstackCloudImage image : getImages())
+        for (final OpenstackCloudImage image : getImages()) {
             image.dispose();
+        }
         cloudImages.clear();
     }
 }
