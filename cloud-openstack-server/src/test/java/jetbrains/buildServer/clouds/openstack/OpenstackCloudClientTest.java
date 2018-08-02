@@ -1,12 +1,16 @@
 package jetbrains.buildServer.clouds.openstack;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.jmock.Expectations;
 import org.jmock.Mockery;
@@ -22,6 +26,7 @@ import jetbrains.buildServer.clouds.CloudInstanceUserData;
 import jetbrains.buildServer.clouds.CloudRegistrar;
 import jetbrains.buildServer.clouds.InstanceStatus;
 import jetbrains.buildServer.clouds.openstack.util.TestCloudClientParameters;
+import jetbrains.buildServer.serverSide.ServerPaths;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
 
 public class OpenstackCloudClientTest {
@@ -80,6 +85,42 @@ public class OpenstackCloudClientTest {
                 props.getProperty(TEST_KEY_REGION), getTestYaml(OpenStackVersion.THREE));
     }
 
+    @Test
+    public void testWithUserScript() throws Exception {
+        // Test data should not include floating ip (instance more longer to create)
+        final String scriptName = "fakeUserScript.sh";
+        final File fakeUserScript = new File("target/system/pluginData/openstack", scriptName);
+        FileUtils.writeStringToFile(fakeUserScript, "echo foo bar");
+
+        Properties props = getTestProps(OpenStackVersion.TWO);
+        testSubSimple(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY), props.getProperty(TEST_KEY_PASSWORD),
+                props.getProperty(TEST_KEY_REGION), getTestYaml(OpenStackVersion.TWO) + "\n  user_script: " + scriptName);
+    }
+
+    @Test
+    public void testWithUserScriptNotExist() throws Exception {
+        // Test data should not include floating ip (instance more longer to create)
+        Properties props = getTestProps(OpenStackVersion.TWO);
+        String errorMsg = testSubSimple(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY), props.getProperty(TEST_KEY_PASSWORD),
+                props.getProperty(TEST_KEY_REGION), getTestYaml(OpenStackVersion.TWO) + "\n  user_script: fakeScriptNotExist-87648348376.sh", true);
+        Assert.assertTrue(errorMsg.contains("Error in reading user script"), errorMsg);
+    }
+
+    @Test
+    public void testFindImageById() throws Exception {
+        Properties props = getTestProps(OpenStackVersion.THREE);
+        OpenstackCloudClient client = getClient(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY),
+                props.getProperty(TEST_KEY_PASSWORD), props.getProperty(TEST_KEY_REGION), getTestYaml(OpenStackVersion.THREE));
+
+        for (OpenstackCloudImage image : client.getImages()) {
+            OpenstackCloudImage newImage = client.findImageById(image.getId());
+            Assert.assertNotNull(newImage);
+            Assert.assertEquals(image.getName(), newImage.getName());
+        }
+
+        client.dispose();
+    }
+
     private Properties getTestProps(OpenStackVersion version) throws IOException {
         final String file = "test.v" + version.value + ".properties";
 
@@ -108,6 +149,12 @@ public class OpenstackCloudClientTest {
     }
 
     private void testSubSimple(String endpointUrl, String identity, String password, String region, String yaml) throws Exception {
+        String errorMsg = testSubSimple(endpointUrl, identity, password, region, yaml, false);
+        Assert.assertNull(errorMsg);
+    }
+
+    private String testSubSimple(String endpointUrl, String identity, String password, String region, String yaml, boolean errorInstanceWillOccurs)
+            throws Exception {
         OpenstackCloudClient client = getClient(endpointUrl, identity, password, region, yaml);
         Assert.assertNull(client.getErrorInfo());
         Assert.assertNotNull(client.getImages());
@@ -118,17 +165,33 @@ public class OpenstackCloudClientTest {
         try {
             instance = client.startNewInstance(image,
                     new CloudInstanceUserData("fakeName", "fakeToken", "localhost", (long) 0, "", "", new HashMap<>()));
-            waitInstanceStatus(instance, InstanceStatus.RUNNING, 5000, InstanceStatus.SCHEDULED_TO_START, InstanceStatus.STARTING);
+            List<InstanceStatus> statusInit = new ArrayList<>(Arrays.asList(InstanceStatus.SCHEDULED_TO_START, InstanceStatus.STARTING));
+            InstanceStatus statusWanted = InstanceStatus.RUNNING;
+            if (errorInstanceWillOccurs) {
+                statusWanted = InstanceStatus.ERROR;
+                statusInit.add(InstanceStatus.ERROR);
+            }
+            waitInstanceStatus(instance, statusWanted, 5000, statusInit);
+            if (errorInstanceWillOccurs) {
+                return instance.getErrorInfo().getMessage();
+            }
+            return null;
         } finally {
             if (instance != null) {
                 client.terminateInstance(instance);
-                waitInstanceStatus(instance, InstanceStatus.STOPPED, 5000, InstanceStatus.RUNNING, InstanceStatus.SCHEDULED_TO_STOP,
-                        InstanceStatus.STOPPING);
+                List<InstanceStatus> statusTerminate = new ArrayList<>(
+                        Arrays.asList(InstanceStatus.RUNNING, InstanceStatus.SCHEDULED_TO_STOP, InstanceStatus.STOPPING));
+                InstanceStatus statusWanted = InstanceStatus.STOPPED;
+                if (errorInstanceWillOccurs) {
+                    statusWanted = InstanceStatus.ERROR;
+                    statusTerminate.add(InstanceStatus.ERROR);
+                }
+                waitInstanceStatus(instance, statusWanted, 5000, statusTerminate);
             }
         }
     }
 
-    private void waitInstanceStatus(CloudInstance instance, InstanceStatus wanted, long intervalWait, InstanceStatus... intermediates)
+    private void waitInstanceStatus(CloudInstance instance, InstanceStatus wanted, long intervalWait, List<InstanceStatus> intermediates)
             throws InterruptedException {
         while (!wanted.equals(instance.getStatus())) {
             boolean currentIsInIntermediates = false;
@@ -155,6 +218,7 @@ public class OpenstackCloudClientTest {
         params.put(OpenstackCloudParameters.INSTANCE_CAP, "1");
 
         final Mockery context = new Mockery();
+
         final PluginDescriptor pluginDescriptor = context.mock(PluginDescriptor.class);
         context.checking(new Expectations() {
             {
@@ -170,7 +234,7 @@ public class OpenstackCloudClientTest {
             }
         });
 
-        OpenstackCloudClientFactory factory = new OpenstackCloudClientFactory(cloudRegistrar, pluginDescriptor, null);
+        OpenstackCloudClientFactory factory = new OpenstackCloudClientFactory(cloudRegistrar, pluginDescriptor, new ServerPaths("target"));
         return factory.createNewClient(null, new TestCloudClientParameters(params));
     }
 

@@ -189,15 +189,14 @@ public class OpenstackCloudInstance implements CloudInstance {
             this.userData = data;
         }
 
-        private byte[] readUserScriptFile(File userScriptFile) {
+        private byte[] readUserScriptFile(File userScriptFile) throws IOException {
             try {
                 String userScript = FileUtil.readText(userScriptFile);
                 // this is userScript actually, but CreateServerOptionscalls it userData
                 return userScript.trim().getBytes(StandardCharsets.UTF_8);
             } catch (IOException e) {
-                LOG.error(e.getMessage());
+                throw new IOException(String.format("Error in reading user script: %s", e.getMessage()), e);
             }
-            return new byte[] {};
         }
 
         public void run() {
