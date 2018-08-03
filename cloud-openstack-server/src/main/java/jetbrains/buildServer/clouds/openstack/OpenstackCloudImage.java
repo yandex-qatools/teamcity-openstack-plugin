@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.jclouds.openstack.nova.v2_0.features.ServerApi;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,6 +31,10 @@ public class OpenstackCloudImage implements CloudImage {
     private final String openstackImageName;
     @NotNull
     private final String flavorName;
+    @Nullable
+    private final String volumeName;
+    @Nullable
+    private final String volumeDevice;
     @NotNull
     private final boolean autoFloatingIp;
     @NotNull
@@ -50,20 +53,19 @@ public class OpenstackCloudImage implements CloudImage {
     @Nullable
     private final CloudErrorInfo errorInfo;
 
-    public OpenstackCloudImage(@NotNull final OpenstackApi openstackApi, @NotNull final String imageId, @NotNull final String imageName,
-            @NotNull final String openstackImageName, @NotNull final String flavorId, @NotNull boolean autoFloatingIp,
-            @NotNull final CreateServerOptions options, @Nullable final String userScriptPath, @NotNull final ServerPaths serverPaths,
-            @NotNull final ScheduledExecutorService executor) {
-        this.openstackApi = openstackApi;
-        this.imageId = imageId;
-        this.imageName = imageName;
-        this.openstackImageName = openstackImageName;
-        this.flavorName = flavorId;
-        this.autoFloatingIp = autoFloatingIp;
-        this.options = options;
-        this.userScriptPath = userScriptPath;
-        this.serverPaths = serverPaths;
-        this.executor = executor;
+    public OpenstackCloudImage(@NotNull final CreateImageOptions cio) {
+        this.openstackApi = cio.getOpenstackApi();
+        this.imageId = cio.getImageId();
+        this.imageName = cio.getImageName();
+        this.openstackImageName = cio.getOpenstackImageName();
+        this.flavorName = cio.getFlavorName();
+        this.volumeName = cio.getVolumeName();
+        this.volumeDevice = cio.getVolumeDevice();
+        this.autoFloatingIp = cio.isAutoFloatingIp();
+        this.userScriptPath = cio.getUserScriptPath();
+        this.serverPaths = cio.getServerPaths();
+        this.options = cio.getCreateServerOptions();
+        this.executor = cio.getScheduledExecutorService();
 
         this.errorInfo = null; // FIXME: need to use this, really.
 
@@ -76,21 +78,48 @@ public class OpenstackCloudImage implements CloudImage {
         }, true), 3, 3, TimeUnit.SECONDS);
     }
 
-    @NotNull
-    public ServerApi getNovaServerApi() {
-        return openstackApi.getNovaServerApi();
-    }
-
-    public String getFloatingIpAvailable() {
-        return openstackApi.getFloatingIpAvailable();
-    }
-
-    public void associateFloatingIp(String serverId, String ip) {
-        openstackApi.associateFloatingIp(serverId, ip);
-    }
-
     private void forgetInstance(@NotNull final OpenstackCloudInstance instance) {
         instances.remove(instance.getInstanceId());
+    }
+
+    @Nullable
+    public OpenstackCloudInstance findInstanceById(@NotNull final String instanceId) {
+        return instances.get(instanceId);
+    }
+
+    @NotNull
+    public Collection<? extends OpenstackCloudInstance> getInstances() {
+        return Collections.unmodifiableCollection(instances.values());
+    }
+
+    @Nullable
+    @Override
+    public Integer getAgentPoolId() {
+        return null;
+    }
+
+    @Nullable
+    public CloudErrorInfo getErrorInfo() {
+        return errorInfo;
+    }
+
+    @NotNull
+    public synchronized OpenstackCloudInstance startNewInstance(@NotNull final CloudInstanceUserData data) {
+        final String instanceId = instanceIdGenerator.next();
+        final OpenstackCloudInstance instance = new OpenstackCloudInstance(this, instanceId, openstackApi, serverPaths, executor);
+
+        instances.put(instanceId, instance);
+        instance.start(data);
+
+        return instance;
+    }
+
+    void dispose() {
+        for (final OpenstackCloudInstance instance : instances.values()) {
+            instance.terminate();
+        }
+        instances.clear();
+        executor.shutdown();
     }
 
     @NotNull
@@ -138,43 +167,13 @@ public class OpenstackCloudImage implements CloudImage {
         return this.userScriptPath;
     }
 
-    @NotNull
-    public Collection<? extends OpenstackCloudInstance> getInstances() {
-        return Collections.unmodifiableCollection(instances.values());
+    @Nullable
+    public String getVolumeName() {
+        return this.volumeName;
     }
 
     @Nullable
-    public OpenstackCloudInstance findInstanceById(@NotNull final String instanceId) {
-        return instances.get(instanceId);
-    }
-
-    @Nullable
-    @Override
-    public Integer getAgentPoolId() {
-        return null;
-    }
-
-    @Nullable
-    public CloudErrorInfo getErrorInfo() {
-        return errorInfo;
-    }
-
-    @NotNull
-    public synchronized OpenstackCloudInstance startNewInstance(@NotNull final CloudInstanceUserData data) {
-        final String instanceId = instanceIdGenerator.next();
-        final OpenstackCloudInstance instance = new OpenstackCloudInstance(this, instanceId, serverPaths, executor);
-
-        instances.put(instanceId, instance);
-        instance.start(data);
-
-        return instance;
-    }
-
-    void dispose() {
-        for (final OpenstackCloudInstance instance : instances.values()) {
-            instance.terminate();
-        }
-        instances.clear();
-        executor.shutdown();
+    public String getVolumeDevice() {
+        return this.volumeDevice;
     }
 }

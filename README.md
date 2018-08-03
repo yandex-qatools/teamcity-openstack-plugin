@@ -39,6 +39,7 @@ You can specify idle time on the agent cloud profile, after which the instance s
 | *security_group*    | true         | [Security group](https://docs.openstack.org/nova/latest/admin/security-groups.html), ex: `default` |
 | *key_pair*          | false        | [Key pair](https://docs.openstack.org/horizon/latest/user/configure-access-and-security-for-instances.html), ex: `my-key` ; required for SSH connection on created instances (like TeamCity Agent Push feature) |
 | *auto_floating_ip*  | false        | Boolean (`false` by default) for [floating ip](https://docs.openstack.org/ocata/user-guide/cli-manage-ip-addresses.html) association ; first from pool used |
+| *volume*            | false        | [Volume](https://docs.openstack.org/cinder/latest/cli/cli-manage-volumes.html) to attach (name and device separated by comma), ex: `some-volume,/dev/vdc`
 | *user_script*       | false        | Script executed on instance start |
 | *availability_zone* | false        | Region for server instance (if not the global configured)
 
@@ -115,6 +116,8 @@ openstack-test-teamcity-plugin:
   network: networkProviderName
   security_group: default
   key_pair: yourKey
+  auto_floating_ip: true  
+  volume: some-volume,/dev/vdc  
 ```
 
 ```

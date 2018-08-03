@@ -78,6 +78,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
             final String networkName = StringUtil.trim(entry.getValue().get("network"));
             final String securityGroupName = StringUtil.trim(entry.getValue().get("security_group"));
             final String keyPair = StringUtil.trim(entry.getValue().get("key_pair"));
+            final String volume = StringUtil.trim(entry.getValue().get("volume"));
             final String userScriptPath = entry.getValue().get("user_script");
             Boolean autoFloatingIp = (Boolean) (Object) entry.getValue().get("auto_floating_ip"); // Evil, but Yaml parse Boolean only for this
             autoFloatingIp = ObjectUtils.chooseNotNull(autoFloatingIp, false); // Can be null if not defined
@@ -91,11 +92,13 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
             }
 
             LOG.debug(String.format(
-                    "Adding cloud image: imageName=%s, openstackImageName=%s, flavorName=%s, networkName=%s, networkId=%s, securityGroupName=%s, keyPair=%s, floatingIp=%s",
-                    imageName, openstackImageName, flavorName, networkName, networkId, securityGroupName, keyPair, autoFloatingIp));
+                    "Adding cloud image: imageName=%s, openstackImageName=%s, flavorName=%s, networkName=%s, networkId=%s, securityGroupName=%s, keyPair=%s, floatingIp=%s, volume=%s",
+                    imageName, openstackImageName, flavorName, networkName, networkId, securityGroupName, keyPair, autoFloatingIp, volume));
 
-            final OpenstackCloudImage image = new OpenstackCloudImage(openstackApi, imageIdGenerator.next(), imageName, openstackImageName,
-                    flavorName, autoFloatingIp, options, userScriptPath, serverPaths, factory.createExecutorService(imageName));
+            final OpenstackCloudImage image = new OpenstackCloudImage(new CreateImageOptions().openstackApi(openstackApi)
+                    .imageId(imageIdGenerator.next()).imageName(imageName).openstackImageName(openstackImageName).flavorName(flavorName)
+                    .volume(volume).autoFloatingIp(autoFloatingIp).userScriptPath(userScriptPath).serverPaths(serverPaths)
+                    .createServerOptions(options).scheduledExecutorService(factory.createExecutorService(imageName)));
 
             cloudImages.add(image);
 
