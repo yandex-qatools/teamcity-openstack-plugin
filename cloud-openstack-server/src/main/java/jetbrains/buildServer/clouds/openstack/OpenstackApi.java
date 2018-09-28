@@ -45,7 +45,7 @@ public class OpenstackApi {
             overrides.put(KeystoneProperties.SCOPE, "project:" + identityObject.getTenant());
         }
         if (!StringUtil.isEmpty(identityObject.getTenantDomain())) {
-            overrides.put(KeystoneProperties.TENANT_ID, identityObject.getTenantDomain());
+            overrides.put(KeystoneProperties.PROJECT_DOMAIN_NAME, identityObject.getTenantDomain());
         }
 
         neutronApi = ContextBuilder.newBuilder(new NeutronApiMetadata()).credentials(identityObject.getCredendials(), password).endpoint(endpointUrl)

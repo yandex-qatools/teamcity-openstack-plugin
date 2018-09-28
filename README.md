@@ -73,7 +73,7 @@ NB: *domain_user* is used for both domains.
 ##### myTenantDomain:myTenant:ldap:foo 
 
 ```
-{"auth":{"identity":{"methods":["password"],"password":{"user":{"name":"foo","domain":{"name":"ldap"},"password":"***"}}},"scope":{"project":{"name":"myTenant","domain":{"id":"myTenantDomain"}}}}}
+{"auth":{"identity":{"methods":["password"],"password":{"user":{"name":"foo","domain":{"name":"ldap"},"password":"***"}}},"scope":{"project":{"name":"myTenant","domain":{"name":"myTenantDomain"}}}}}
 ```
 
 ## Usage
