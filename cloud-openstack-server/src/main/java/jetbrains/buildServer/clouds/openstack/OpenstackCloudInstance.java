@@ -9,12 +9,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.jclouds.openstack.nova.v2_0.domain.Server;
+import org.jclouds.openstack.nova.v2_0.domain.Server.Status;
 import org.jclouds.openstack.nova.v2_0.domain.ServerCreated;
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import com.google.common.base.Strings;
 import com.intellij.openapi.diagnostic.Logger;
 
 import jetbrains.buildServer.clouds.CloudConstants;
@@ -39,6 +39,8 @@ public class OpenstackCloudInstance implements CloudInstance {
     @NotNull
     private final OpenstackCloudImage cloudImage;
     @NotNull
+    private final OpenstackApi openstackApi;
+    @NotNull
     private final Date startDate;
     @Nullable
     private volatile CloudErrorInfo errorInfo;
@@ -46,12 +48,15 @@ public class OpenstackCloudInstance implements CloudInstance {
     private ServerCreated serverCreated;
     @NotNull
     private final ScheduledExecutorService executor;
+
+    @Nullable
     private String ip;
 
     private final AtomicReference<InstanceStatus> status = new AtomicReference<>(InstanceStatus.SCHEDULED_TO_START);
 
-    public OpenstackCloudInstance(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId, @NotNull ServerPaths serverPaths,
-            @NotNull ScheduledExecutorService executor) {
+    public OpenstackCloudInstance(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId,
+            @NotNull final OpenstackApi openstackApi, @NotNull ServerPaths serverPaths, @NotNull ScheduledExecutorService executor) {
+        this.openstackApi = openstackApi;
         this.cloudImage = image;
         this.instanceId = instanceId;
         this.serverPaths = serverPaths;
@@ -63,7 +68,7 @@ public class OpenstackCloudInstance implements CloudInstance {
     public synchronized void updateStatus() {
         LOG.debug(String.format("Pinging %s for status", getName()));
         if (serverCreated != null) {
-            Server server = cloudImage.getNovaServerApi().get(serverCreated.getId());
+            Server server = openstackApi.getServer(serverCreated.getId());
             if (server != null) {
                 Server.Status currentStatus = server.getStatus();
                 LOG.debug(String.format("Getting instance status from openstack for %s, result is %s", getName(), currentStatus));
@@ -137,6 +142,7 @@ public class OpenstackCloudInstance implements CloudInstance {
         return startDate;
     }
 
+    @Nullable
     public String getNetworkIdentity() {
         return ip;
     }
@@ -167,7 +173,7 @@ public class OpenstackCloudInstance implements CloudInstance {
         setStatus(InstanceStatus.SCHEDULED_TO_STOP);
         try {
             if (serverCreated != null) {
-                cloudImage.getNovaServerApi().delete(serverCreated.getId());
+                openstackApi.deleteServer(serverCreated.getId());
                 setStatus(InstanceStatus.STOPPING);
             }
         } catch (final Exception e) {
@@ -189,6 +195,109 @@ public class OpenstackCloudInstance implements CloudInstance {
             this.userData = data;
         }
 
+        public void run() {
+            try {
+                // If floating ip, retrieve one and store in meta-data
+                String floatingIp = retrieveAndStoreInMetaDataFloatingIp();
+
+                CreateServerOptions options = cloudImage.getImageOptions();
+                options.metadata(userData.getCustomAgentConfigurationParameters());
+
+                // If user script, read it and store in meta-data
+                retrieveAndStoreInMetaDataUserScriptFile(options);
+
+                LOG.debug(String.format("Creating openstack instance with flavorId=%s, imageId=%s, options=%s", cloudImage.getFlavorId(),
+                        cloudImage.getOpenstackImageId(), options));
+                serverCreated = openstackApi.createServer(getName(), cloudImage.getOpenstackImageId(), cloudImage.getFlavorId(), options);
+
+                // Attach volume
+                attachVolume();
+
+                // Associate floating ip
+                ip = associateFloatingIp(floatingIp);
+
+                setStatus(InstanceStatus.STARTING);
+            } catch (final Exception e) {
+                processError(e);
+            }
+        }
+
+        private String associateFloatingIp(String floatingIp) throws InterruptedException, OpenstackException {
+            if (!cloudImage.isAutoFloatingIp()) {
+                return null;
+            }
+            LOG.debug(String.format("Associating floating ip to serverId %s", serverCreated.getId()));
+            // Associating floating IP. Require fixed IP so wait until found
+            final long maxWait = 120000;
+            final long beginWait = System.currentTimeMillis();
+            while (openstackApi.getServer(serverCreated.getId()).getAddresses().isEmpty()) {
+                if (System.currentTimeMillis() > (beginWait + maxWait)) {
+                    throw new OpenstackException(String.format("Waiting fixed ip fails, taking more than %s ms", maxWait));
+                }
+                LOG.debug(String.format("(Waiting fixed ip before floating ip association on serverId: %s)", serverCreated.getId()));
+                Thread.sleep(1000);
+            }
+            openstackApi.associateFloatingIp(serverCreated.getId(), floatingIp); // NOSONAR : Floating IP can't be null here
+            return floatingIp;
+        }
+
+        private void attachVolume() throws OpenstackException, InterruptedException {
+            String volumeName = cloudImage.getVolumeName();
+            if (StringUtil.isEmpty(volumeName)) {
+                return;
+            }
+            String volumeDevice = cloudImage.getVolumeDevice();
+            LOG.debug(String.format("Attach volume '%s' (with device '%s') to serverId %s", volumeName, volumeDevice, serverCreated.getId()));
+            String volumeId = openstackApi.getVolumeIdByName(volumeName);
+            if (StringUtil.isEmpty(volumeId)) {
+                throw new OpenstackException(String.format("Volume Id can't be retrieved for volume name: %s", volumeName));
+            }
+            if (StringUtil.isEmpty(volumeDevice)) {
+                throw new OpenstackException(String.format("Volume device can't be empty for volume name: %s", volumeName));
+            }
+            while (!Status.ACTIVE.equals(openstackApi.getServer(serverCreated.getId()).getStatus())) {
+                final long maxWait = 120000;
+                final long beginWait = System.currentTimeMillis();
+                if (System.currentTimeMillis() > (beginWait + maxWait)) {
+                    throw new OpenstackException(String.format("Waiting fixed ip fails, taking more than %s ms", maxWait));
+                }
+                LOG.debug(String.format("(Waiting instance available before volume attachment on serverId: %s)", serverCreated.getId()));
+                Thread.sleep(1000);
+            }
+            openstackApi.attachVolumeToServer(serverCreated.getId(), volumeId, volumeDevice);
+        }
+
+        private String retrieveAndStoreInMetaDataFloatingIp() throws OpenstackException {
+            if (!cloudImage.isAutoFloatingIp()) {
+                return null;
+            }
+            // Floating ip should be in meta-data before instance start
+            // If multiple instances start in parallel, perhaps same ip could be retrieved
+            // So an ip reservation mechanism should implemented in this case
+            LOG.debug("Retrieve floating ip for future instance association");
+            String floatingIp = openstackApi.getFloatingIpAvailable();
+            if (StringUtil.isEmpty(floatingIp)) {
+                throw new OpenstackException("Floating ip could not be found, cancel instance start");
+            }
+            LOG.debug(String.format("Floating ip: %s", floatingIp));
+            userData.addAgentConfigurationParameter(OpenstackCloudParameters.AGENT_CLOUD_IP, floatingIp);
+            return floatingIp;
+
+        }
+
+        private void retrieveAndStoreInMetaDataUserScriptFile(CreateServerOptions options) throws IOException {
+            // TODO: that code should be in OpenstackCloudImage but as we make it possible to change userScript without touching teamcity, that
+            // hack takes place, sorry
+            String userScriptPath = cloudImage.getUserScriptPath();
+            if (StringUtil.isEmpty(userScriptPath)) {
+                return;
+            }
+            LOG.debug(String.format("Read user script: %s", userScriptPath));
+            File pluginData = serverPaths.getPluginDataDirectory();
+            File userScriptFile = new File(new File(pluginData, OpenstackCloudParameters.PLUGIN_SHORT_NAME), userScriptPath);
+            options.userData(readUserScriptFile(userScriptFile)).configDrive(true);
+        }
+
         private byte[] readUserScriptFile(File userScriptFile) throws IOException {
             try {
                 String userScript = FileUtil.readText(userScriptFile);
@@ -196,61 +305,6 @@ public class OpenstackCloudInstance implements CloudInstance {
                 return userScript.trim().getBytes(StandardCharsets.UTF_8);
             } catch (IOException e) {
                 throw new IOException(String.format("Error in reading user script: %s", e.getMessage()), e);
-            }
-        }
-
-        public void run() {
-            try {
-                String floatingIp = null;
-                if (cloudImage.isAutoFloatingIp()) {
-                    // Floating ip should be in meta-data before instance start
-                    // If multiple instances start in parallel, perhaps same ip could be retrieved
-                    // So an ip reservation mechanism should implemented in this case
-                    LOG.debug("Retrieve floating ip for future instance association");
-                    floatingIp = cloudImage.getFloatingIpAvailable();
-                    if (StringUtil.isEmpty(floatingIp)) {
-                        throw new OpenstackException("Floating ip could not be found, cancel instance start");
-                    }
-                    LOG.debug(String.format("Floating ip: %s", floatingIp));
-                    userData.addAgentConfigurationParameter(OpenstackCloudParameters.AGENT_CLOUD_IP, floatingIp);
-                }
-
-                String openstackImageId = cloudImage.getOpenstackImageId();
-                String flavorId = cloudImage.getFlavorId();
-                CreateServerOptions options = cloudImage.getImageOptions();
-                options.metadata(userData.getCustomAgentConfigurationParameters());
-
-                // TODO: that code should be in OpenstackCloudImage but as we make it possible to change userScript without touching teamcity, that
-                // hack takes place, sorry
-                String userScriptPath = cloudImage.getUserScriptPath();
-                if (!Strings.isNullOrEmpty(userScriptPath)) {
-                    File pluginData = serverPaths.getPluginDataDirectory();
-                    File userScriptFile = new File(new File(pluginData, OpenstackCloudParameters.PLUGIN_SHORT_NAME), userScriptPath);
-                    options.userData(readUserScriptFile(userScriptFile)).configDrive(true);
-                }
-
-                LOG.debug(String.format("Creating openstack instance with flavorId=%s, imageId=%s, options=%s", flavorId, openstackImageId, options));
-                serverCreated = cloudImage.getNovaServerApi().create(getName(), openstackImageId, flavorId, options);
-
-                if (cloudImage.isAutoFloatingIp()) {
-                    LOG.debug(String.format("Associating floating ip to serverId %s", serverCreated.getId()));
-                    // Associating floating IP. Require fixed IP so wait until found
-                    final long maxWait = 120000;
-                    final long beginWait = System.currentTimeMillis();
-                    while (cloudImage.getNovaServerApi().get(serverCreated.getId()).getAddresses().isEmpty()) {
-                        if (System.currentTimeMillis() > (beginWait + maxWait)) {
-                            throw new OpenstackException(String.format("Waiting fixed ip fails, taking more than %s ms", maxWait));
-                        }
-                        LOG.debug(String.format("(Waiting fixed ip before floating ip association on serverId: %s)", serverCreated.getId()));
-                        Thread.sleep(1000);
-                    }
-                    cloudImage.associateFloatingIp(serverCreated.getId(), floatingIp);
-                    ip = floatingIp;
-                }
-
-                setStatus(InstanceStatus.STARTING);
-            } catch (final Exception e) {
-                processError(e);
             }
         }
     }

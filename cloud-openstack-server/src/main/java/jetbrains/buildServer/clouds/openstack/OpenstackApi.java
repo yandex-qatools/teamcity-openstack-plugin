@@ -5,6 +5,9 @@ import java.util.Properties;
 
 import org.jclouds.ContextBuilder;
 import org.jclouds.location.reference.LocationConstants;
+import org.jclouds.openstack.cinder.v1.CinderApi;
+import org.jclouds.openstack.cinder.v1.CinderApiMetadata;
+import org.jclouds.openstack.cinder.v1.domain.Volume;
 import org.jclouds.openstack.keystone.config.KeystoneProperties;
 import org.jclouds.openstack.neutron.v2.NeutronApi;
 import org.jclouds.openstack.neutron.v2.NeutronApiMetadata;
@@ -14,7 +17,11 @@ import org.jclouds.openstack.nova.v2_0.NovaApi;
 import org.jclouds.openstack.nova.v2_0.NovaApiMetadata;
 import org.jclouds.openstack.nova.v2_0.domain.Flavor;
 import org.jclouds.openstack.nova.v2_0.domain.Image;
-import org.jclouds.openstack.nova.v2_0.features.ServerApi;
+import org.jclouds.openstack.nova.v2_0.domain.Server;
+import org.jclouds.openstack.nova.v2_0.domain.ServerCreated;
+import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import jetbrains.buildServer.util.StringUtil;
 
@@ -24,6 +31,7 @@ public class OpenstackApi {
 
     private final NeutronApi neutronApi;
     private final NovaApi novaApi;
+    private final CinderApi cinderApi;
 
     public OpenstackApi(String endpointUrl, String identity, String password, String region) {
 
@@ -53,9 +61,34 @@ public class OpenstackApi {
 
         novaApi = ContextBuilder.newBuilder(new NovaApiMetadata()).endpoint(endpointUrl).credentials(identityObject.getCredendials(), password)
                 .overrides(overrides).buildApi(NovaApi.class);
+
+        cinderApi = ContextBuilder.newBuilder(new CinderApiMetadata()).endpoint(endpointUrl).credentials(identityObject.getCredendials(), password)
+                .overrides(overrides).buildApi(CinderApi.class);
+
     }
 
-    public String getImageIdByName(String name) {
+    @Nullable
+    public Server getServer(@NotNull final String id) {
+        return novaApi.getServerApi(region).get(id);
+    }
+
+    @NotNull
+    public ServerCreated createServer(@NotNull final String name, @NotNull final String imageId, @NotNull final String flavorId,
+            @NotNull final CreateServerOptions options) {
+        return novaApi.getServerApi(region).create(name, imageId, flavorId, options);
+
+    }
+
+    public void deleteServer(@NotNull final String id) {
+        novaApi.getServerApi(region).delete(id);
+    }
+
+    public void attachVolumeToServer(@NotNull final String serverId, @NotNull final String volumeId, @NotNull final String volumeDevice) {
+        novaApi.getVolumeAttachmentApi(region).get().attachVolumeToServerAsDevice(volumeId, serverId, volumeDevice);
+    }
+
+    @Nullable
+    public String getImageIdByName(@NotNull final String name) {
         List<? extends Image> images = novaApi.getImageApi(region).listInDetail().concat().toList();
         for (Image image : images) {
             if (image.getName().equals(name))
@@ -64,7 +97,8 @@ public class OpenstackApi {
         return null;
     }
 
-    public String getFlavorIdByName(String name) {
+    @Nullable
+    public String getFlavorIdByName(@NotNull final String name) {
         List<? extends Flavor> flavors = novaApi.getFlavorApi(region).listInDetail().concat().toList();
         for (Flavor flavor : flavors) {
             if (flavor.getName().equals(name))
@@ -73,7 +107,8 @@ public class OpenstackApi {
         return null;
     }
 
-    public String getNetworkIdByName(String name) {
+    @Nullable
+    public String getNetworkIdByName(@NotNull final String name) {
         List<? extends Network> networks = neutronApi.getNetworkApi(region).list().concat().toList();
         for (Network network : networks) {
             if (network.getName().equals(name))
@@ -82,14 +117,21 @@ public class OpenstackApi {
         return null;
     }
 
-    public ServerApi getNovaServerApi() {
-        return novaApi.getServerApi(region);
+    @Nullable
+    public String getVolumeIdByName(@NotNull final String name) {
+        List<? extends Volume> volumes = cinderApi.getVolumeApi(region).list().toList();
+        for (Volume volume : volumes) {
+            if (volume.getName().equals(name))
+                return volume.getId();
+        }
+        return null;
     }
 
-    public void associateFloatingIp(String serverId, String ip) {
+    public void associateFloatingIp(@NotNull final String serverId, @NotNull final String ip) {
         novaApi.getFloatingIPApi(region).get().addToServer(ip, serverId);
     }
 
+    @Nullable
     public String getFloatingIpAvailable() {
         for (FloatingIP ip : neutronApi.getFloatingIPApi(region).list().concat().toList()) {
             if (StringUtil.isEmpty(ip.getFixedIpAddress())) {
@@ -105,7 +147,7 @@ public class OpenstackApi {
      * @param url endpoint
      * @return 2 or 3
      */
-    protected static String getKeystoneVersion(String url) {
+    protected static String getKeystoneVersion(@NotNull final String url) {
         final String def = "3";
         if (StringUtil.isEmpty(url)) {
             return def;
