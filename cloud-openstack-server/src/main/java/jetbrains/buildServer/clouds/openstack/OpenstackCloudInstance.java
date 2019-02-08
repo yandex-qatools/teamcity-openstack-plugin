@@ -216,6 +216,9 @@ public class OpenstackCloudInstance implements CloudInstance {
                 }
 
                 String openstackImageId = cloudImage.getOpenstackImageId();
+                if (StringUtil.isEmpty(openstackImageId)) {
+                    throw new OpenstackException(String.format("No image can be found for name: %s", cloudImage.getOpenstackImageName()));
+                }
                 String flavorId = cloudImage.getFlavorId();
                 CreateServerOptions options = cloudImage.getImageOptions();
                 options.metadata(userData.getCustomAgentConfigurationParameters());

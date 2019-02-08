@@ -107,6 +107,16 @@ public class OpenstackCloudClientTest {
     }
 
     @Test
+    public void testWithBadImageName() throws Exception {
+        Properties props = getTestProps(OpenStackVersion.TWO);
+        String yaml = getTestYaml(OpenStackVersion.TWO);
+        yaml = yaml.replaceFirst("image: .*\n", "image: imageNotExist4242\n");
+        String errorMsg = testSubSimple(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY), props.getProperty(TEST_KEY_PASSWORD),
+                props.getProperty(TEST_KEY_REGION), yaml, true);
+        Assert.assertTrue(errorMsg.contains("No image can be found for name"), errorMsg);
+    }
+
+    @Test
     public void testFindImageById() throws Exception {
         Properties props = getTestProps(OpenStackVersion.THREE);
         OpenstackCloudClient client = getClient(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY),
