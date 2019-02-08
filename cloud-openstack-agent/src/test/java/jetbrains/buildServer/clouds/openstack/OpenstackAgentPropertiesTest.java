@@ -60,6 +60,11 @@ public class OpenstackAgentPropertiesTest {
 
     private OpenstackAgentProperties prepareAgentProperties(String jsonResponseContentFileInTestResources, Map<String, String> parameters)
             throws IOException {
+        return prepareAgentProperties(jsonResponseContentFileInTestResources, parameters, 200);
+    }
+
+    private OpenstackAgentProperties prepareAgentProperties(String jsonResponseContentFileInTestResources, Map<String, String> parameters,
+            int httpCodeReturn) throws IOException {
 
         final Mockery context = new Mockery();
         final BuildAgentConfigurationEx agentConfig = context.mock(BuildAgentConfigurationEx.class);
@@ -87,7 +92,7 @@ public class OpenstackAgentPropertiesTest {
 
         if (StringUtils.isNoneBlank(jsonResponseContentFileInTestResources)) {
             final String endpoint = "/openstack/test/meta_data.json";
-            stubFor(get(urlEqualTo(endpoint)).willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json")
+            stubFor(get(urlEqualTo(endpoint)).willReturn(aResponse().withStatus(httpCodeReturn).withHeader("Content-Type", "application/json")
                     .withBody(FileUtils.readFileToString(new File("src/test/resources", jsonResponseContentFileInTestResources)))));
             oap.setUrlMetaData("http://localhost:" + wireMockServer.port() + endpoint);
         }
@@ -162,6 +167,15 @@ public class OpenstackAgentPropertiesTest {
         prepareAgentProperties("meta_data_noUserData.json", parameters).afterAgentConfigurationLoaded(null);
         Assert.assertTrue(Lo4jBeanAppender.contains("Openstack metadata usage disabled (agent configuration not overridden)"));
         Assert.assertFalse(Lo4jBeanAppender.contains("Detected Openstack instance. Will write parameters from metadata"));
+        Assert.assertFalse(Lo4jBeanAppender.contains("Unknow problem on Openstack plugin"));
+    }
+
+    @Test
+    public void testProxyError() throws IOException {
+        prepareAgentProperties("meta_data_userData.json", null, 407).afterAgentConfigurationLoaded(null);
+
+        Assert.assertTrue(Lo4jBeanAppender.contains("It seems build-agent launched at non-Openstack instance"));
+        Assert.assertFalse(Lo4jBeanAppender.contains("Network is unreachable"));
         Assert.assertFalse(Lo4jBeanAppender.contains("Unknow problem on Openstack plugin"));
     }
 }

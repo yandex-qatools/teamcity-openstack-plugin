@@ -1,14 +1,15 @@
 package jetbrains.buildServer.clouds.openstack;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
-import java.net.SocketException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
@@ -84,7 +85,7 @@ public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
             LOG.info(String.format(LOG_SETTINGS, OpenstackCloudParameters.AGENT_CLOUD_TYPE, OpenstackCloudParameters.CLOUD_TYPE));
             agentConfiguration.addConfigurationParameter(OpenstackCloudParameters.AGENT_CLOUD_TYPE, OpenstackCloudParameters.CLOUD_TYPE);
 
-        } catch (SocketException | FileNotFoundException e) {
+        } catch (IOException e) {
             LOG.info(String.format("It seems build-agent launched at non-Openstack instance: %s", e.getMessage()));
         } catch (Exception e) {
             LOG.error(String.format("Unknow problem on Openstack plugin: %s.", e.getMessage()), e);
@@ -93,11 +94,13 @@ public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
 
     private static String readDataFromUrl(String sURL) throws IOException {
         String data = "";
-        InputStream in = new URL(sURL).openStream();
-        try {
+        URL url = new URL(sURL);
+        HttpURLConnection ctx = (HttpURLConnection) url.openConnection();
+        if (ctx.getResponseCode() != HttpServletResponse.SC_OK) {
+            throw new IOException(String.format("Http code %s on meta data URL", ctx.getResponseCode()));
+        }
+        try (InputStream in = url.openStream()) {
             data = IOUtils.toString(in, StandardCharsets.UTF_8.name());
-        } finally {
-            IOUtils.closeQuietly(in);
         }
         return data.trim();
     }
