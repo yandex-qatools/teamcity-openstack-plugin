@@ -1,14 +1,25 @@
 package jetbrains.buildServer.clouds.openstack;
 
-import org.jetbrains.annotations.NotNull;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.jetbrains.annotations.NotNull;
 
 public class IdGenerator {
-    private final AtomicInteger myNextId = new AtomicInteger();
+
+    private final AtomicLong lastId = new AtomicLong(System.currentTimeMillis());
 
     @NotNull
     public String next() {
-        return String.valueOf(myNextId.incrementAndGet());
+        long now = System.currentTimeMillis();
+        while (true) {
+            long lastTime = lastId.get();
+            if (lastTime >= now) {
+                now = lastTime + 1;
+            }
+            if (lastId.compareAndSet(lastTime, now)) {
+                return String.valueOf(now);
+            }
+        }
     }
+
 }
