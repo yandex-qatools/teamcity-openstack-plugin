@@ -7,3 +7,5 @@ target/
 /.project
 /.README.md.html
 /pom.xml.versionsBackup
+/**/pom.xml.releaseBackup
+/release.properties
