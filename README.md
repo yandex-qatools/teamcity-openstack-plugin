@@ -4,9 +4,9 @@
 
 ## Download
 
-| Release (last) | Snapshot (last) | Compatibility |
+| Releases | Snapshot (last) | Compatibility |
 |---|---|---|
-| [Download](https://teamcity.jetbrains.com/repository/download/TeamCityThirdPartyPlugins_OpenStackCloudSupport_Release/.lastSuccessful/cloud-openstack.zip?guest=1) | [Download](https://teamcity.jetbrains.com/repository/download/TeamCityThirdPartyPlugins_OpenStackCloudSupport_BuildSnapshotIntegration/.lastSuccessful/cloud-openstack.zip?guest=1) | TeamCity 10+ |
+| [Download](https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityThirdPartyPlugins_OpenStackCloudSupport_Release) | [Download](https://teamcity.jetbrains.com/repository/download/TeamCityThirdPartyPlugins_OpenStackCloudSupport_BuildSnapshotIntegration/.lastSuccessful/cloud-openstack.zip?guest=1) | TeamCity 10+ |
 
 
 ## Agent Configuration
