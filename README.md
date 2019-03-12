@@ -132,8 +132,19 @@ openstack-test-teamcity-plugin:
   network: networkProviderName
   security_group: default
   key_pair: yourKey
-```  
+```
 
 3. run `mvn clean package` (if OpenStack test endpoint requires trustStore certificate not in JVM used for test, add `-Djavax.net.ssl.trustStore=/path/to/cacerts`)
 
 4. install resulted *cloud-openstack.zip* plugin file to TeamCity server
+
+## Release process
+
+Execute locally:
+
+```
+git reset --hard origin/master
+mvn clean release:clean release:prepare
+```
+
+And TeamCity [Release build](https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityThirdPartyPlugins_OpenStackCloudSupport_Release) will be executed.
