@@ -66,27 +66,38 @@ public class OpenstackCloudInstance implements CloudInstance {
             Server server = cloudImage.getNovaServerApi().get(serverCreated.getId());
             if (server != null) {
                 Server.Status currentStatus = server.getStatus();
-                LOG.debug(String.format("Getting instance status from openstack for %s, result is %s", getName(), currentStatus));
+                LOG.debug(String.format("Getting instance status from openstack for '%s', result is '%s' (previous internal status setted was '%s')",
+                        getName(), currentStatus, getStatus()));
                 switch (currentStatus) {
+                case BUILD:
+                case REBUILD:
+                    setStatus(InstanceStatus.SCHEDULED_TO_START);
+                    break;
                 case ACTIVE:
-                    setStatus(InstanceStatus.RUNNING);
+                    // When OpenStack instance is stopping, the status is always 'ACTIVE' => check if termination started
+                    if (InstanceStatus.SCHEDULED_TO_STOP.equals(getStatus()) || InstanceStatus.STOPPING.equals(getStatus())) {
+                        setStatus(InstanceStatus.STOPPING);
+                    } else {
+                        setStatus(InstanceStatus.RUNNING);
+                    }
                     break;
                 case ERROR:
+                    terminate();
                     setStatus(InstanceStatus.ERROR);
+                    break;
+                case SHUTOFF:
                     terminate();
                     break;
+                case DELETED:
                 case SUSPENDED:
                 case PAUSED:
-                case DELETED:
                 case SOFT_DELETED:
                 case UNKNOWN:
                 case UNRECOGNIZED:
                 case SHELVED:
                 case SHELVED_OFFLOADED:
-                case SHUTOFF:
-                    setStatus(InstanceStatus.STOPPED);
-                    break;
                 default:
+                    setStatus(InstanceStatus.STOPPED);
                     break;
                 }
             } else {
@@ -162,15 +173,28 @@ public class OpenstackCloudInstance implements CloudInstance {
         throw new UnsupportedOperationException("Restart openstack instance operation is not supported yet");
     }
 
-    public void terminate() {
-        LOG.info(String.format("Terminating cloud openstack instance %s", getName()));
+    public void stop() {
+        LOG.info(String.format("Stopping cloud openstack instance %s", getName()));
         setStatus(InstanceStatus.SCHEDULED_TO_STOP);
         try {
             if (serverCreated != null) {
-                cloudImage.getNovaServerApi().delete(serverCreated.getId());
-                setStatus(InstanceStatus.STOPPING);
+                cloudImage.getNovaServerApi().stop(serverCreated.getId());
             }
         } catch (final Exception e) {
+            setStatus(InstanceStatus.ERROR_CANNOT_STOP);
+            processError(e);
+        }
+    }
+
+    public void terminate() {
+        LOG.info(String.format("Terminating cloud openstack instance %s", getName()));
+        setStatus(InstanceStatus.STOPPED);
+        try {
+            if (serverCreated != null) {
+                cloudImage.getNovaServerApi().delete(serverCreated.getId());
+            }
+        } catch (final Exception e) {
+            setStatus(InstanceStatus.ERROR_CANNOT_STOP);
             processError(e);
         }
     }
