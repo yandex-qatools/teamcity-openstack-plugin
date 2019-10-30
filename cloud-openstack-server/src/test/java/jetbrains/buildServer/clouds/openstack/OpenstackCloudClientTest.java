@@ -1,10 +1,14 @@
 package jetbrains.buildServer.clouds.openstack;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +30,7 @@ import jetbrains.buildServer.clouds.CloudInstanceUserData;
 import jetbrains.buildServer.clouds.CloudRegistrar;
 import jetbrains.buildServer.clouds.InstanceStatus;
 import jetbrains.buildServer.clouds.openstack.util.TestCloudClientParameters;
+import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.ServerPaths;
 import jetbrains.buildServer.web.openapi.PluginDescriptor;
 
@@ -40,6 +45,7 @@ public class OpenstackCloudClientTest {
 
     static enum OpenStackVersion {
         TWO(2), THREE(3);
+
         private final int value;
 
         private OpenStackVersion(int value) {
@@ -165,6 +171,7 @@ public class OpenstackCloudClientTest {
 
     private String testSubSimple(String endpointUrl, String identity, String password, String region, String yaml, boolean errorInstanceWillOccurs)
             throws Exception {
+        Date startTime = new Date(System.currentTimeMillis() - 1000);
         OpenstackCloudClient client = getClient(endpointUrl, identity, password, region, yaml);
         Assert.assertNull(client.getErrorInfo());
         Assert.assertNotNull(client.getImages());
@@ -185,6 +192,25 @@ public class OpenstackCloudClientTest {
             if (errorInstanceWillOccurs) {
                 return instance.getErrorInfo().getMessage();
             }
+            String instanceId = ((OpenstackCloudInstance) instance).getOpenstackInstanceId();
+            Assert.assertTrue(!StringUtil.isEmpty(instanceId));
+            Assert.assertNotNull(instance.getImage());
+            Assert.assertTrue(!StringUtil.isEmpty(instance.getImageId()));
+            // No possible Assert for network identity, only v3 return non-null value
+            instance.getNetworkIdentity();
+            Assert.assertNotNull(instance.getStartedTime());
+            Assert.assertTrue(instance.getStartedTime().after(startTime),
+                    String.format("Begin: %s / InstanceStart: %s", startTime, instance.getStartedTime()));
+
+            Map<String, String> parameters = new HashMap<>();
+            AgentDescription agentDescription = mock(AgentDescription.class);
+            when(agentDescription.getConfigurationParameters()).thenReturn(parameters);
+            Assert.assertFalse(instance.containsAgent(agentDescription));
+            parameters.put("testCloudType", OpenstackCloudParameters.CLOUD_TYPE);
+            Assert.assertFalse(instance.containsAgent(agentDescription));
+            parameters.put(OpenstackCloudParameters.OPENSTACK_INSTANCE_ID, instanceId);
+            Assert.assertTrue(instance.containsAgent(agentDescription));
+
             return null;
         } finally {
             if (instance != null) {

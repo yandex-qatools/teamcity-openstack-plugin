@@ -16,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 
 import com.google.common.base.Strings;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.util.text.StringUtil;
 
 import jetbrains.buildServer.clouds.CloudConstants;
 import jetbrains.buildServer.clouds.CloudErrorInfo;
@@ -27,7 +28,6 @@ import jetbrains.buildServer.serverSide.AgentDescription;
 import jetbrains.buildServer.serverSide.ServerPaths;
 import jetbrains.buildServer.util.ExceptionUtil;
 import jetbrains.buildServer.util.FileUtil;
-import jetbrains.buildServer.util.StringUtil;
 
 public class OpenstackCloudInstance implements CloudInstance {
     @NotNull
