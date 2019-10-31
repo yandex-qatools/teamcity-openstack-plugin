@@ -1,0 +1,327 @@
+{
+    "token": {
+        "is_domain": false,
+        "methods": [
+            "password"
+        ],
+        "is_admin_project": false,
+        "project": {
+            "domain": {
+                "id": "default",
+                "name": "Default"
+            },
+            "id": "0",
+            "name": "tenant"
+        },
+        "catalog": [
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/v2.1/nova-id",
+                        "region": "region1",
+                        "interface": "public",
+                        "id": "nova-id"
+                    }
+                ],
+                "type": "compute",
+                "id": "0",
+                "name": "nova"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/",
+                        "region": "region1",
+                        "interface": "public",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "identity",
+                "id": "00000000000000000000000000000000",
+                "name": "keystone"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/v1/AUTH_00000000000000000000000000000000",
+                        "region": "region1",
+                        "interface": "public",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "object-store",
+                "id": "00000000000000000000000000000000",
+                "name": "swift"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/v1/00000000000000000000000000000000",
+                        "region": "region1",
+                        "interface": "internal",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "orchestration",
+                "id": "00000000000000000000000000000000",
+                "name": "heat"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT",
+                        "region": "region1",
+                        "interface": "public",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "dns",
+                "id": "00000000000000000000000000000000",
+                "name": "designate"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT",
+                        "region": "region1",
+                        "interface": "admin",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "backup",
+                "id": "00000000000000000000000000000000",
+                "name": "freezer"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT",
+                        "region": "region1",
+                        "interface": "internal",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "dashboard",
+                "id": "00000000000000000000000000000000",
+                "name": "horizon"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/v1/00000000000000000000000000000000",
+                        "region": "region1",
+                        "interface": "admin",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "volume",
+                "id": "00000000000000000000000000000000",
+                "name": "cinder"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT",
+                        "region": "region1",
+                        "interface": "internal",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "lifecycle",
+                "id": "00000000000000000000000000000000",
+                "name": "ardana"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/",
+                        "region": "region1",
+                        "interface": "public",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "network",
+                "id": "00000000000000000000000000000000",
+                "name": "neutron"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/v2/00000000000000000000000000000000",
+                        "region": "region1",
+                        "interface": "admin",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "sharev2",
+                "id": "00000000000000000000000000000000",
+                "name": "manilav2"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/",
+                        "region": "region1",
+                        "interface": "public",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "placement",
+                "id": "00000000000000000000000000000000",
+                "name": "placement"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT",
+                        "region": "region1",
+                        "interface": "admin",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "key-manager",
+                "id": "00000000000000000000000000000000",
+                "name": "barbican"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/v2/00000000000000000000000000000000",
+                        "region": "region1",
+                        "interface": "public",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "volumev2",
+                "id": "00000000000000000000000000000000",
+                "name": "cinderv2"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/v3/00000000000000000000000000000000",
+                        "region": "region1",
+                        "interface": "internal",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "volumev3",
+                "id": "00000000000000000000000000000000",
+                "name": "cinderv3"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/v2.0",
+                        "region": "region1",
+                        "interface": "internal",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "monitoring",
+                "id": "00000000000000000000000000000000",
+                "name": "monasca"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/",
+                        "region": "region1",
+                        "interface": "admin",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "metering",
+                "id": "00000000000000000000000000000000",
+                "name": "ceilometer"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/v3.0",
+                        "region": "region1",
+                        "interface": "admin",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "logging",
+                "id": "00000000000000000000000000000000",
+                "name": "kronos"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/v1/00000000000000000000000000000000",
+                        "region": "region1",
+                        "interface": "internal",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "share",
+                "id": "00000000000000000000000000000000",
+                "name": "manila"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT/api/v1/",
+                        "region": "region1",
+                        "interface": "internal",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "opsconsole",
+                "id": "00000000000000000000000000000000",
+                "name": "opsconsole"
+            },
+            {
+                "endpoints": [
+                    {
+                        "region_id": "region1",
+                        "url": "http://localhost:REPLACE-PORT",
+                        "region": "region1",
+                        "interface": "public",
+                        "id": "00000000000000000000000000000000"
+                    }
+                ],
+                "type": "image",
+                "id": "00000000000000000000000000000000",
+                "name": "glance"
+            }
+        ],
+        "expires_at": "2919-10-31T12:49:19.000000Z",
+        "user": {
+            "password_expires_at": null,
+            "domain": {
+                "id": "00000000000000000000000000000000",
+                "name": "LDAP"
+            },
+            "id": "00000000000000000000000000000000",
+            "name": "foo"
+        },
+        "audit_ids": [
+            "00000000000000000000000000000000"
+        ],
+        "issued_at": "2919-10-31T08:49:19.000000Z"
+    }
+}

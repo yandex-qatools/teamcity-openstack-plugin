@@ -41,7 +41,7 @@ public class OpenstackCloudInstance implements CloudInstance {
     @NotNull
     private final Date startDate;
     @Nullable
-    private volatile CloudErrorInfo errorInfo;
+    private CloudErrorInfo errorInfo;
     @Nullable
     private ServerCreated serverCreated;
     @NotNull
@@ -71,7 +71,7 @@ public class OpenstackCloudInstance implements CloudInstance {
                 switch (currentStatus) {
                 case BUILD:
                 case REBUILD:
-                    setStatus(InstanceStatus.SCHEDULED_TO_START);
+                    setStatus(InstanceStatus.STARTING);
                     break;
                 case ACTIVE:
                     // When OpenStack instance is stopping, the status is always 'ACTIVE' => check if termination started

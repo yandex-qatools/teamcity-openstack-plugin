@@ -1,0 +1,16 @@
+{
+    "flavors": [
+        {
+            "ram": 32768,
+            "OS-FLV-DISABLED:disabled": false,
+            "os-flavor-access:is_public": true,
+            "rxtx_factor": 1.0,
+            "disk": 20,
+            "id": "flavor-id",
+            "name": "large.c8",
+            "vcpus": 8,
+            "swap": "",
+            "OS-FLV-EXT-DATA:ephemeral": 0
+        }
+    ]
+}

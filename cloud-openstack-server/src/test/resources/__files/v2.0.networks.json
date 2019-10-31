@@ -1,0 +1,32 @@
+{
+    "networks": [
+        {
+            "status": "ACTIVE",
+            "router:external": false,
+            "availability_zone_hints": [
+            ],
+            "availability_zones": [
+                "nova"
+            ],
+            "ipv4_address_scope": null,
+            "description": "",
+            "subnets": [
+                "subnet-id"
+            ],
+            "tenant_id": "test_tenant_id",
+            "created_at": "2019-09-11T06:36:03Z",
+            "tags": [
+            ],
+            "updated_at": "2019-09-11T06:36:03Z",
+            "dns_domain": "",
+            "mtu": 8950,
+            "ipv6_address_scope": null,
+            "revision_number": 2,
+            "admin_state_up": true,
+            "shared": false,
+            "project_id": "test_project_id",
+            "id": "network-id",
+            "name": "test_network"
+        }
+    ]
+}
