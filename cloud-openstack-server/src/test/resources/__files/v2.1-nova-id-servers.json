@@ -1,0 +1,12 @@
+{
+    "server": {
+        "security_groups": [
+            {
+                "name": "test_security_groups"
+            }
+        ],
+        "OS-DCF:diskConfig": "MANUAL",
+        "id": "server-id",
+        "adminPass": "adminfoobar"
+    }
+}

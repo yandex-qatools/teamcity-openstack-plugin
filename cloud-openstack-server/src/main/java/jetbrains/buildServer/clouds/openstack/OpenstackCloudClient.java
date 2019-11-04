@@ -165,7 +165,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     }
 
     public void terminateInstance(@NotNull final CloudInstance instance) {
-        ((OpenstackCloudInstance) instance).terminate();
+        ((OpenstackCloudInstance) instance).stop();
     }
 
     @Nullable

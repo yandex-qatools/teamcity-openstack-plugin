@@ -8,6 +8,17 @@
         </layout>
     </appender>
 
+    <logger name="org.eclipse.jetty">
+        <level value="ERROR" />
+    </logger>
+    <logger name="com.github.tomakehurst.wiremock">
+        <level value="ERROR" />
+    </logger>
+     <logger name="org.apache.http">
+        <level value="ERROR" />
+    </logger>
+
+
     <root>
         <level value="DEBUG" />
         <appender-ref ref="console" />

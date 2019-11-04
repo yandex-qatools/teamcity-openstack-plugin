@@ -1,0 +1,8 @@
+openstack-test-teamcity-plugin:
+  image: Ubuntu
+  flavor: large.c8
+  network: test_network
+  security_group: test_security_group
+  key_pair: test_key_pair
+  # Floating IP is false, hard to initiate Nova client completly via Mock
+  auto_floating_ip: false
