@@ -4,7 +4,7 @@
     <parent>
         <artifactId>cloud-openstack</artifactId>
         <groupId>jetbrains.buildServer.clouds</groupId>
-        <version>1.1</version>
+        <version>1.2-SNAPSHOT</version>
     </parent>
     <artifactId>cloud-openstack-server</artifactId>
     <packaging>jar</packaging>
