@@ -62,7 +62,11 @@ public class OpenstackCloudInstance implements CloudInstance {
 
     public synchronized void updateStatus() {
         LOG.debug(String.format("Pinging %s for status", getName()));
-        if (serverCreated != null) {
+        if (serverCreated == null) {
+            LOG.debug("Will skip status updating cause instance is not created yet");
+            return;
+        }
+        try {
             Server server = cloudImage.getNovaServerApi().get(serverCreated.getId());
             if (server != null) {
                 Server.Status currentStatus = server.getStatus();
@@ -82,8 +86,8 @@ public class OpenstackCloudInstance implements CloudInstance {
                     }
                     break;
                 case ERROR:
-                    terminate();
                     setStatus(InstanceStatus.ERROR);
+                    terminate();
                     break;
                 case SHUTOFF:
                     terminate();
@@ -103,8 +107,10 @@ public class OpenstackCloudInstance implements CloudInstance {
             } else {
                 setStatus(InstanceStatus.STOPPED);
             }
-        } else {
-            LOG.debug("Will skip status updating cause instance is not created yet");
+        } catch (Exception e) {
+            LOG.error("Got exception while calculating instance status, will terminate", e);
+            setStatus(InstanceStatus.ERROR);
+            terminate();
         }
     }
 

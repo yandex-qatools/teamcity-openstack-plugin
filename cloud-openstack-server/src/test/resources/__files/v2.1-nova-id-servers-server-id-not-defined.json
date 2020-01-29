@@ -1,0 +1,52 @@
+{
+    "server": {
+        "OS-EXT-STS:task_state": null,
+        "addresses": {
+            "test_network": [
+                {
+                    "OS-EXT-IPS-MAC:mac_addr": "00:00:00:00:00:00",
+                    "version": 4,
+                    "addr": "192.168.1.42",
+                    "OS-EXT-IPS:type": "fixed"
+                },
+                {
+                    "OS-EXT-IPS-MAC:mac_addr": "00:00:00:00:00:00",
+                    "version": 4,
+                    "addr": "10.248.7.42",
+                    "OS-EXT-IPS:type": "floating"
+                }
+            ]
+        },
+        "image": {
+            "id": "image-id"
+        },
+        "OS-EXT-STS:vm_state": "active",
+        "OS-SRV-USG:launched_at": null,
+        "flavor": {
+            "id": "flavor-id"
+        },
+
+        "user_id": "user-id",
+        "OS-DCF:diskConfig": "MANUAL",
+        "accessIPv4": "10.248.7.42",
+        "accessIPv6": "",
+        "progress": 0,
+        "OS-EXT-STS:power_state": 0,
+        "OS-EXT-AZ:availability_zone": "",
+        "config_drive": "",
+        "status": "ACTIVE",
+        "updated": "2019-10-31T08:49:21Z",
+        "hostId": "",
+        "OS-SRV-USG:terminated_at": null,
+        "key_name": "test_key_pair",
+        "name": "openstack-test-teamcity-plugin-4242424242",
+        "created": "2019-10-31T08:49:21Z",
+        "tenant_id": "tenant-id",
+        "os-extended-volumes:volumes_attached": [
+        ],
+        "metadata": {
+            "agent.cloud.ip": "10.248.7.42",
+            "teamcity.cloud.agent.remove.policy": "remove"
+        }
+    }
+}

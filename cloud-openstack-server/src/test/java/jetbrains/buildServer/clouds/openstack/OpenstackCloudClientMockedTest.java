@@ -2,9 +2,12 @@ package jetbrains.buildServer.clouds.openstack;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
 import java.io.File;
@@ -135,5 +138,24 @@ public class OpenstackCloudClientMockedTest extends AbstractTestOpenstackCloudCl
         Assert.assertNotNull(err);
         Assert.assertTrue(err.contains("DELETE"), err);
         Assert.assertTrue(err.contains("Server Error"), err);
+    }
+
+    @Test
+    public void testErrorClientNovaNPEOnUpdateStatus() throws Exception {
+        initVMStart();
+
+        // OpenStack response with a content without 'id' => will throw NPE on update status
+        stubFor(get("/v2.1/nova-id/servers/server-id").willReturn(aResponse().withBodyFile("v2.1-nova-id-servers-server-id-not-defined.json")));
+
+        // Termination due to NPE + unit 'testSubSimple' termination
+        stubFor(delete("/v2.1/nova-id/servers/server-id").willReturn(aResponse().withStatus(500)));
+
+        // unit 'testDubSimple' termination
+        stubFor(post("/v2.1/nova-id/servers/server-id/action").willReturn(aResponse().withStatus(500)));
+
+        testSubSimple(wireMockServer.baseUrl() + "/v3", "default:my-tenant:ldap:foo", "bar", "region1", getTestYaml("Mock"), true, true);
+
+        // Test termination call after NPE
+        verify(deleteRequestedFor(urlMatching("/v2.1/nova-id/servers/server-id")));
     }
 }

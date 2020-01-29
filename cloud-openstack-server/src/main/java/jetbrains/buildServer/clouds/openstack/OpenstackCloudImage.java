@@ -70,8 +70,9 @@ public class OpenstackCloudImage implements CloudImage {
         this.executor.scheduleWithFixedDelay(new VerboseRunnable(() -> {
             for (OpenstackCloudInstance instance : getInstances()) {
                 instance.updateStatus();
-                if (instance.getStatus() == InstanceStatus.STOPPED || instance.getStatus() == InstanceStatus.ERROR)
+                if (instance.getStatus() == InstanceStatus.STOPPED || instance.getStatus() == InstanceStatus.ERROR) {
                     forgetInstance(instance);
+                }
             }
         }, true), 3, 3, TimeUnit.SECONDS);
     }
