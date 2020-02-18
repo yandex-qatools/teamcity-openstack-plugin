@@ -3,6 +3,9 @@ package jetbrains.buildServer.clouds.openstack;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
@@ -10,6 +13,10 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import com.intellij.openapi.util.text.StringUtil;
+
+import jetbrains.buildServer.clouds.CloudInstance;
+import jetbrains.buildServer.clouds.CloudInstanceUserData;
+import jetbrains.buildServer.clouds.InstanceStatus;
 
 public class OpenstackCloudClientTest extends AbstractTestOpenstackCloudClient {
 
@@ -112,6 +119,50 @@ public class OpenstackCloudClientTest extends AbstractTestOpenstackCloudClient {
             Assert.assertEquals(image.getName(), newImage.getName());
         }
 
+        client.dispose();
+    }
+
+    @Test
+    public void testRestoration() throws Exception {
+        Properties props = getTestProps(OpenStackVersion.THREE);
+        String endpointUrl = props.getProperty(TEST_KEY_URL);
+        String identity = props.getProperty(TEST_KEY_IDENTITY);
+        String password = props.getProperty(TEST_KEY_PASSWORD);
+        String region = props.getProperty(TEST_KEY_REGION);
+        String yaml = getTestYaml(OpenStackVersion.THREE.value);
+
+        // Start first with 1 VM
+        OpenstackCloudClient client = getClient(endpointUrl, identity, password, region, yaml);
+        CloudInstance instance = client.startNewInstance(client.getImages().iterator().next(),
+                new CloudInstanceUserData("fakeName", "fakeToken", "localhost", (long) 0, "", "", new HashMap<>()));
+        waitInstanceStatus(instance, InstanceStatus.RUNNING, 5000,
+                new ArrayList<>(Arrays.asList(InstanceStatus.SCHEDULED_TO_START, InstanceStatus.STARTING)));
+        while (!client.isInitialized()) {
+            // Wait client initialization
+            Thread.sleep(1000); // NOSONAR : Wanted for unit test
+        }
+        Assert.assertEquals(client.getImages().iterator().next().getInstances().size(), 1);
+
+        // Simulate an update
+        client.dispose();
+
+        // Recreate without any VM start
+        client = getClient(endpointUrl, identity, password, region, yaml);
+        while (!client.isInitialized()) {
+            // Wait client initialization
+            Thread.sleep(1000); // NOSONAR : Wanted for unit test
+        }
+        // Waiting async restoration execution
+        Thread.sleep(3000); // NOSONAR : Wanted for unit test
+
+        // Assert correct restoration
+        Assert.assertEquals(client.getImages().iterator().next().getInstances().size(), 1);
+
+        // Clean all
+        instance = client.getImages().iterator().next().getInstances().iterator().next();
+        client.terminateInstance(instance);
+        waitInstanceStatus(instance, InstanceStatus.STOPPED, 5000, new ArrayList<>(
+                Arrays.asList(InstanceStatus.RUNNING, InstanceStatus.SCHEDULED_TO_STOP, InstanceStatus.STOPPING, InstanceStatus.STOPPED)));
         client.dispose();
     }
 

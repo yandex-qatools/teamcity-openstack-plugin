@@ -143,7 +143,7 @@ public class AbstractTestOpenstackCloudClient {
         return returnMessage;
     }
 
-    private void waitInstanceStatus(CloudInstance instance, InstanceStatus wanted, long intervalWait, List<InstanceStatus> intermediates)
+    protected void waitInstanceStatus(CloudInstance instance, InstanceStatus wanted, long intervalWait, List<InstanceStatus> intermediates)
             throws InterruptedException {
         while (!wanted.equals(instance.getStatus())) {
             boolean currentIsInIntermediates = false;
