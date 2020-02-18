@@ -7,14 +7,13 @@
     <packaging>pom</packaging>
     <properties>
         <teamcity.version>2017.2</teamcity.version>
-        <jclouds.version>2.1.1</jclouds.version>
+        <jclouds.version>2.2.0</jclouds.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <scm>
         <connection>scm:git:https://github.com/yandex-qatools/teamcity-openstack-plugin</connection>
-        <tag>cloud-openstack-1.0</tag>
     </scm>
     <repositories>
         <repository>
@@ -25,12 +24,6 @@
     <dependencyManagement>
         <dependencies>
             <!-- these are opensourced teamcity dependencies (mainly on https://download.jetbrains.com/teamcity-repository) -->
-            <dependency>
-                <groupId>org.jetbrains.teamcity.idea</groupId>
-                <artifactId>obsolete-openapi</artifactId>
-                <version>${teamcity.version}</version>
-                <scope>provided</scope>
-            </dependency>
             <dependency>
                 <groupId>org.jetbrains.teamcity</groupId>
                 <artifactId>agent-api</artifactId>
@@ -79,7 +72,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>2.5.3</version>
+                    <version>3.0.0-M1</version>
                 </plugin>
             </plugins>
         </pluginManagement>

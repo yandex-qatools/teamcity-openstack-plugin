@@ -15,8 +15,7 @@ import org.jclouds.openstack.nova.v2_0.NovaApiMetadata;
 import org.jclouds.openstack.nova.v2_0.domain.Flavor;
 import org.jclouds.openstack.nova.v2_0.domain.Image;
 import org.jclouds.openstack.nova.v2_0.features.ServerApi;
-
-import jetbrains.buildServer.util.StringUtil;
+import org.springframework.util.StringUtils;
 
 public class OpenstackApi {
 
@@ -40,11 +39,11 @@ public class OpenstackApi {
         overrides.put(KeystoneProperties.KEYSTONE_VERSION, keyStoneVersion);
         overrides.put(LocationConstants.PROPERTY_ZONES, region);
 
-        if (!StringUtil.isEmpty(identityObject.getTenant())) {
+        if (!StringUtils.isEmpty(identityObject.getTenant())) {
             // Only for keystone v3, for v2 'tenant' is part of Credentials (cf. OpenstackIdentity)
             overrides.put(KeystoneProperties.SCOPE, "project:" + identityObject.getTenant());
         }
-        if (!StringUtil.isEmpty(identityObject.getTenantDomain())) {
+        if (!StringUtils.isEmpty(identityObject.getTenantDomain())) {
             overrides.put(KeystoneProperties.PROJECT_DOMAIN_NAME, identityObject.getTenantDomain());
         }
 
@@ -92,7 +91,7 @@ public class OpenstackApi {
 
     public String getFloatingIpAvailable() {
         for (FloatingIP ip : neutronApi.getFloatingIPApi(region).list().concat().toList()) {
-            if (StringUtil.isEmpty(ip.getFixedIpAddress())) {
+            if (StringUtils.isEmpty(ip.getFixedIpAddress())) {
                 return ip.getFloatingIpAddress();
             }
         }
@@ -107,7 +106,7 @@ public class OpenstackApi {
      */
     protected static String getKeystoneVersion(String url) {
         final String def = "3";
-        if (StringUtil.isEmpty(url)) {
+        if (StringUtils.isEmpty(url)) {
             return def;
         }
         int index = url.toLowerCase().lastIndexOf("/v") + 2;

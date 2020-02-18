@@ -5,6 +5,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.jclouds.openstack.nova.v2_0.options.CreateServerOptions;
 import org.jetbrains.annotations.NotNull;
@@ -14,6 +20,7 @@ import org.yaml.snakeyaml.Yaml;
 import com.google.common.base.Strings;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.util.ObjectUtils;
+import com.jcabi.log.VerboseRunnable;
 
 import jetbrains.buildServer.clouds.CloudClientEx;
 import jetbrains.buildServer.clouds.CloudClientParameters;
@@ -38,6 +45,8 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     private CloudErrorInfo errorInfo = null;
     @Nullable
     private final Integer instanceCap;
+    private ScheduledExecutorService executor;
+    private ScheduledFuture<?> initialized;
 
     public OpenstackCloudClient(@NotNull final CloudClientParameters params, @NotNull ServerPaths serverPaths,
             @NotNull final ExecutorServiceFactory factory) {
@@ -66,7 +75,6 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         }
 
         final StringBuilder error = new StringBuilder();
-        final IdGenerator imageIdGenerator = new IdGenerator();
         for (Map.Entry<String, Map<String, String>> entry : map.entrySet()) {
             final String imageName = entry.getKey().trim();
             if (entry.getValue() == null) {
@@ -94,17 +102,40 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
                     "Adding cloud image: imageName=%s, openstackImageName=%s, flavorName=%s, networkName=%s, networkId=%s, securityGroupName=%s, keyPair=%s, floatingIp=%s",
                     imageName, openstackImageName, flavorName, networkName, networkId, securityGroupName, keyPair, autoFloatingIp));
 
-            final OpenstackCloudImage image = new OpenstackCloudImage(openstackApi, imageIdGenerator.next(), imageName, openstackImageName,
-                    flavorName, autoFloatingIp, options, userScriptPath, serverPaths, factory.createExecutorService(imageName));
+            LOG.info(String.format("Create image  [%s] ...", imageName));
+            final OpenstackCloudImage image = new OpenstackCloudImage(openstackApi, imageName /* imageIdGenerator.next() */, imageName,
+                    openstackImageName, flavorName, autoFloatingIp, options, userScriptPath, serverPaths, factory.createExecutorService(imageName));
 
             cloudImages.add(image);
 
         }
 
         errorInfo = error.length() == 0 ? null : new CloudErrorInfo(error.substring(1));
+
+        // start asynchronous initialization:
+        this.executor = Executors.newSingleThreadScheduledExecutor();
+        this.initialized = this.executor.schedule(new VerboseRunnable(() -> {
+            for (OpenstackCloudImage cloudImage : cloudImages) {
+                cloudImage.initialize();
+            }
+        }, true), 1, TimeUnit.SECONDS);
     }
 
     public boolean isInitialized() {
+        // wait for initialization completion:
+        if (this.initialized != null) {
+            try {
+                this.initialized.get(cloudImages.size() * 3, TimeUnit.SECONDS);
+                if (this.executor != null) {
+                    executor.shutdown();
+                    executor = null;
+                }
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException | TimeoutException ex) {
+                LOG.error(String.format("Initialization failure: %s: %s", ex.getClass().getSimpleName(), ex.getMessage()));
+            }
+        }
         return true;
     }
 
@@ -178,5 +209,8 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
             image.dispose();
         }
         cloudImages.clear();
+        if (executor != null)
+            executor.shutdown();
     }
+
 }
