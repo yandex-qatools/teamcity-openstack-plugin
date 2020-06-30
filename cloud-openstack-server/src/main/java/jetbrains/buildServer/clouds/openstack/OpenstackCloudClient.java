@@ -125,7 +125,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         // wait for initialization completion:
         if (this.initialized != null) {
             try {
-                this.initialized.get(cloudImages.size() * 3, TimeUnit.SECONDS);
+                this.initialized.get((long) cloudImages.size() * 3, TimeUnit.SECONDS);
                 if (this.executor != null) {
                     executor.shutdown();
                     executor = null;
