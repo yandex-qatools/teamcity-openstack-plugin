@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Properties;
 
@@ -144,6 +146,7 @@ public class OpenstackCloudClientTest extends AbstractTestOpenstackCloudClient {
         Assert.assertEquals(client.getImages().iterator().next().getInstances().size(), 1);
 
         // Simulate an update
+        Date dateProfileUpdate = new Date();
         client.dispose();
 
         // Recreate without any VM start
@@ -155,8 +158,12 @@ public class OpenstackCloudClientTest extends AbstractTestOpenstackCloudClient {
         // Waiting async restoration execution
         Thread.sleep(3000); // NOSONAR : Wanted for unit test
 
-        // Assert correct restoration
-        Assert.assertEquals(client.getImages().iterator().next().getInstances().size(), 1);
+        // Assert correct restoration and 'creation date' of previous server
+        Collection<? extends OpenstackCloudInstance> instances = client.getImages().iterator().next().getInstances();
+        Assert.assertEquals(instances.size(), 1);
+        OpenstackCloudInstance instanceCreatedPreviously = instances.iterator().next();
+        Assert.assertTrue(instanceCreatedPreviously.getStartedTime().before(dateProfileUpdate),
+                String.format("Date instance: %s / date profile update: %s", instanceCreatedPreviously.getStartedTime(), dateProfileUpdate));
 
         // Clean all
         instance = client.getImages().iterator().next().getInstances().iterator().next();
