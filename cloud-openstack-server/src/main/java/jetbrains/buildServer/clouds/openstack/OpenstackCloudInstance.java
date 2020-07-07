@@ -66,7 +66,7 @@ public class OpenstackCloudInstance implements CloudInstance {
         this.instanceId = instanceId;
         this.serverPaths = serverPaths;
         this.executor = executor;
-        this.startDate = new Date();
+        this.startDate = server.getCreated();
         final String id = server.getId();
         final String name = server.getName();
         this.serverCreated = ServerCreated.builder().id(id).name(name).diskConfig(server.getDiskConfig().orNull()).build();
