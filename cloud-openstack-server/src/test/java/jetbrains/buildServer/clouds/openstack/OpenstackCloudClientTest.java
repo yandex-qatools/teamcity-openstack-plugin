@@ -44,7 +44,7 @@ public class OpenstackCloudClientTest extends AbstractTestOpenstackCloudClient {
         Properties props = getTestProps(OpenStackVersion.TWO);
         OpenstackCloudClient client = getClient(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY),
                 props.getProperty(TEST_KEY_PASSWORD), props.getProperty(TEST_KEY_REGION), null);
-        Assert.assertEquals("No images specified", client.getErrorInfo().getMessage());
+        Assert.assertEquals(client.getErrorInfo().getMessage(), "No images specified");
     }
 
     @Test
@@ -52,7 +52,7 @@ public class OpenstackCloudClientTest extends AbstractTestOpenstackCloudClient {
         Properties props = getTestProps(OpenStackVersion.TWO);
         OpenstackCloudClient client = getClient(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY),
                 props.getProperty(TEST_KEY_PASSWORD), props.getProperty(TEST_KEY_REGION), "#A comment");
-        Assert.assertEquals("No images specified (perhaps only comments)", client.getErrorInfo().getMessage());
+        Assert.assertEquals(client.getErrorInfo().getMessage(), "No images specified (perhaps only comments)");
     }
 
     @Test
@@ -60,7 +60,7 @@ public class OpenstackCloudClientTest extends AbstractTestOpenstackCloudClient {
         Properties props = getTestProps(OpenStackVersion.TWO);
         OpenstackCloudClient client = getClient(props.getProperty(TEST_KEY_URL), props.getProperty(TEST_KEY_IDENTITY),
                 props.getProperty(TEST_KEY_PASSWORD), props.getProperty(TEST_KEY_REGION), "some-image:");
-        Assert.assertEquals("No parameters defined for image: some-image", client.getErrorInfo().getMessage());
+        Assert.assertEquals(client.getErrorInfo().getMessage(), "No parameters defined for image: some-image");
     }
 
     @Test

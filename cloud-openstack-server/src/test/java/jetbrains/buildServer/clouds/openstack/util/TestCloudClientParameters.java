@@ -19,6 +19,11 @@ public class TestCloudClientParameters extends CloudClientParameters {
     }
 
     @Override
+    public String getProfileId() {
+        throw new UnsupportedOperationException("NYI");
+    }
+
+    @Override
     public String getParameter(String name) {
         return params.get(name);
     }
