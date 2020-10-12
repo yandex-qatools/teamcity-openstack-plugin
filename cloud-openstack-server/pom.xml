@@ -35,7 +35,7 @@
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>1.25</version>
+            <version>1.27</version>
         </dependency>
 
         <dependency>
@@ -93,13 +93,13 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>3.2.4</version>
+            <version>3.5.13</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.github.tomakehurst</groupId>
             <artifactId>wiremock</artifactId>
-            <version>2.26.0</version>
+            <version>2.27.2</version>
             <scope>test</scope>
             <exclusions>
                 <!-- TestNG is used, avoid confusion -->

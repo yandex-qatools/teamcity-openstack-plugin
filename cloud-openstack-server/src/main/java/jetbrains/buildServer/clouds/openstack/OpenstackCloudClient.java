@@ -22,6 +22,7 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.util.ObjectUtils;
 import com.jcabi.log.VerboseRunnable;
 
+import jetbrains.buildServer.clouds.CanStartNewInstanceResult;
 import jetbrains.buildServer.clouds.CloudClientEx;
 import jetbrains.buildServer.clouds.CloudClientParameters;
 import jetbrains.buildServer.clouds.CloudErrorInfo;
@@ -121,6 +122,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         }, true), 1, TimeUnit.SECONDS);
     }
 
+    @Override
     public boolean isInitialized() {
         // wait for initialization completion:
         if (this.initialized != null) {
@@ -171,11 +173,21 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
     }
 
     @Nullable
+    @Override
     public CloudErrorInfo getErrorInfo() {
         return errorInfo;
     }
 
-    public boolean canStartNewInstance(@NotNull final CloudImage image) {
+    /**
+     * Deprecated since 2018.1. jetbrains.buildServer.clouds.CloudClient#canStartNewInstanceWithDetails(jetbrains.buildServer.clouds.CloudImage) is
+     * being used instead.
+     * 
+     * @deprecated
+     * @see jetbrains.buildServer.clouds.CloudClient#canStartNewInstance(jetbrains.buildServer.clouds.CloudImage)
+     */
+    @Override
+    @Deprecated
+    public boolean canStartNewInstance(@NotNull final CloudImage image) { // TODO: NOSONAR Should work with 2017 and 2020
         if (instanceCap == null) {
             return true;
         }
@@ -186,11 +198,20 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         return i < instanceCap;
     }
 
+    @Override
+    public CanStartNewInstanceResult canStartNewInstanceWithDetails(@NotNull final CloudImage image) {
+        if (canStartNewInstance(image)) { // TODO: NOSONAR Should work with 2017 and 2020
+            return CanStartNewInstanceResult.yes();
+        }
+        return CanStartNewInstanceResult.no("Instance cap exceeded");
+    }
+
     @NotNull
     public CloudInstance startNewInstance(@NotNull final CloudImage image, @NotNull final CloudInstanceUserData data) {
         return ((OpenstackCloudImage) image).startNewInstance(data);
     }
 
+    @Override
     public void restartInstance(@NotNull final CloudInstance instance) {
         ((OpenstackCloudInstance) instance).restart();
     }
@@ -204,6 +225,7 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
         return null;
     }
 
+    @Override
     public void dispose() {
         for (final OpenstackCloudImage image : getImages()) {
             image.dispose();
