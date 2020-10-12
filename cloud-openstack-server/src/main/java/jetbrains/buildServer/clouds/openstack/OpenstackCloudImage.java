@@ -2,6 +2,7 @@ package jetbrains.buildServer.clouds.openstack;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
@@ -23,8 +24,25 @@ import jetbrains.buildServer.clouds.CloudInstanceUserData;
 import jetbrains.buildServer.clouds.InstanceStatus;
 import jetbrains.buildServer.log.Loggers;
 import jetbrains.buildServer.serverSide.ServerPaths;
+import jetbrains.buildServer.serverSide.TeamCityProperties;
 
 public class OpenstackCloudImage implements CloudImage {
+
+    @NotNull
+    public static final String DELAY_RESTORE_DELAY_KEY = "openstack.restore.delay";
+    @NotNull
+    public static final int DELAY_RESTORE_DELAY_DEFAULT_VALUE = 1;
+
+    @NotNull
+    public static final String DELAY_STATUS_INITIAL_KEY = "openstack.status.initial";
+    @NotNull
+    public static final int DELAY_STATUS_INITIAL_DEFAULT_VALUE = 5;
+
+    @NotNull
+    public static final String DELAY_STATUS_DELAY_KEY = "openstack.status.delay";
+    @NotNull
+    public static final int DELAY_STATUS_DELAY_DEFAULT_VALUE = 10;
+
     @NotNull
     private static final Logger LOG = Logger.getInstance(Loggers.CLOUD_CATEGORY_ROOT);
     @NotNull
@@ -53,7 +71,7 @@ public class OpenstackCloudImage implements CloudImage {
     @NotNull
     private final IdGenerator instanceIdGenerator = new IdGenerator();
     @Nullable
-    private final CloudErrorInfo errorInfo;
+    private CloudErrorInfo errorInfo = null;
 
     public OpenstackCloudImage(@NotNull final OpenstackApi openstackApi, @NotNull final String imageId, @NotNull final String imageName,
             @NotNull final String openstackImageName, @NotNull final String flavorId, @NotNull boolean autoFloatingIp,
@@ -69,25 +87,45 @@ public class OpenstackCloudImage implements CloudImage {
         this.userScriptPath = userScriptPath;
         this.serverPaths = serverPaths;
         this.executor = executor;
-
-        this.errorInfo = null; // FIXME: need to use this, really.
-
         this.executor.scheduleWithFixedDelay(new VerboseRunnable(() -> {
+            // Update status of instances managed by this image
+            LOG.debug(String.format("Updating instances status for openstack image: %s", getName()));
+            Map<String, Server.Status> status = new HashMap<>();
+            try {
+                for (Server server : openstackApi.getNovaServerApi().listInDetail().concat().filter(p -> p.getName().startsWith(getName()))) {
+                    status.put(server.getName(), server.getStatus());
+                }
+                resetAnyPreviousError();
+            } catch (Exception e) {
+                // All current instances will be set in error
+                processError("Instances status cannot be updated", e);
+            }
             for (OpenstackCloudInstance instance : getInstances()) {
-                instance.updateStatus();
+                instance.updateStatus(status.get(instance.getName()));
                 if (instance.getStatus() == InstanceStatus.STOPPED || instance.getStatus() == InstanceStatus.ERROR) {
                     forgetInstance(instance);
                 }
             }
-        }, true), 3, 3, TimeUnit.SECONDS);
+        }, true), getTeamCityProperty(DELAY_STATUS_INITIAL_KEY, DELAY_STATUS_INITIAL_DEFAULT_VALUE),
+                getTeamCityProperty(DELAY_STATUS_DELAY_KEY, DELAY_STATUS_DELAY_DEFAULT_VALUE), TimeUnit.SECONDS);
+    }
 
+    private void processError(@NotNull String process, @NotNull final Exception e) {
+        final String message = e.getMessage();
+        LOG.error(message, e);
+        errorInfo = new CloudErrorInfo(process, message, e);
+    }
+
+    private void resetAnyPreviousError() {
+        errorInfo = null;
     }
 
     // Initialize the image
-    public void initialize() {
+    void initialize() {
         final String openstackImageId = initialGetOpenstackImageId(5);
         if (openstackImageId != null && !openstackImageId.isEmpty()) {
-            this.executor.schedule(new VerboseRunnable(() -> restoreInstances(openstackImageId), true), 1, TimeUnit.SECONDS);
+            this.executor.schedule(new VerboseRunnable(() -> restoreInstances(openstackImageId), true),
+                    getTeamCityProperty(DELAY_RESTORE_DELAY_KEY, DELAY_RESTORE_DELAY_DEFAULT_VALUE), TimeUnit.SECONDS);
         }
     }
 
@@ -108,21 +146,26 @@ public class OpenstackCloudImage implements CloudImage {
     }
 
     // Restore instances of the image
-    public void restoreInstances(String openstackImageId) {
-        LOG.info(String.format("Restore potential instances for openstack image: %s", imageName));
-        Collection<Server> list = openstackApi.getNovaServerApi().listInDetail().concat().toList();
-        for (Server server : list) {
-            // Restore servers of the specified image id, only with ACTIVE status
-            Resource simage = server.getImage();
-            if (simage != null && openstackImageId.equals(simage.getId()) && Server.Status.ACTIVE.equals(server.getStatus())) {
-                final String instanceId = server.getName().substring(server.getName().lastIndexOf('-') + 1);
-                if (!instances.containsKey(instanceId)) {
-                    // Add only if not already existing (sample: started at profile creation)
-                    final OpenstackCloudInstance instance = new OpenstackCloudInstance(this, instanceId, serverPaths, executor, server);
-                    instances.put(instanceId, instance);
+    private void restoreInstances(String openstackImageId) {
+        try {
+            LOG.info(String.format("Restore potential instances for openstack image: %s", getName()));
+            for (Server server : openstackApi.getNovaServerApi().listInDetail().concat().filter(p -> p.getName().startsWith(getName()))) {
+                // Restore servers of the specified image id (all status, some could be shutdown but not terminated)
+                Resource simage = server.getImage();
+                if (simage != null && openstackImageId.equals(simage.getId())) {
+                    final String instanceId = server.getName().substring(server.getName().lastIndexOf('-') + 1);
+                    if (!instances.containsKey(instanceId)) {
+                        // Add only if not already existing (sample: started at profile creation)
+                        final OpenstackCloudInstance instance = new OpenstackCloudInstance(this, instanceId, serverPaths, executor, server);
+                        instances.put(instanceId, instance);
+                    }
                 }
             }
+            resetAnyPreviousError();
+        } catch (Exception e) {
+            processError("Current instances (if any) cannot be restored", e);
         }
+
     }
 
     @NotNull
@@ -210,8 +253,13 @@ public class OpenstackCloudImage implements CloudImage {
     }
 
     @NotNull
+    synchronized String getNextInstanceId() {
+        return instanceIdGenerator.next();
+    }
+
+    @NotNull
     public synchronized OpenstackCloudInstance startNewInstance(@NotNull final CloudInstanceUserData data) {
-        final String instanceId = instanceIdGenerator.next();
+        final String instanceId = getNextInstanceId();
         final OpenstackCloudInstance instance = new OpenstackCloudInstance(this, instanceId, serverPaths, executor);
 
         instances.put(instanceId, instance);
@@ -225,4 +273,9 @@ public class OpenstackCloudImage implements CloudImage {
         instances.clear();
         executor.shutdown();
     }
+
+    private int getTeamCityProperty(String key, int defaultValue) {
+        return TeamCityProperties.getInteger(key, defaultValue);
+    }
+
 }

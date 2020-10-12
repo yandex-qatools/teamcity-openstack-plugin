@@ -19,6 +19,7 @@ import org.testng.Assert;
 
 import com.intellij.openapi.util.text.StringUtil;
 
+import jetbrains.buildServer.clouds.CanStartNewInstanceResult;
 import jetbrains.buildServer.clouds.CloudClientFactory;
 import jetbrains.buildServer.clouds.CloudImage;
 import jetbrains.buildServer.clouds.CloudInstance;
@@ -65,7 +66,7 @@ public class AbstractTestOpenstackCloudClient {
     protected String getTestYaml(String version) throws IOException {
         final String file = "test.v" + version + ".yml";
 
-        // Old 'commons-io', but provided by TeamCity 'server-api' ... this is just for UT
+        // Old 'commons-io', but provided by TeamCity 'server-api' ... this is just for unit test
         InputStream is = this.getClass().getResourceAsStream("/" + file);
         if (is == null) {
             throw new UnsupportedOperationException(
@@ -81,6 +82,16 @@ public class AbstractTestOpenstackCloudClient {
         Assert.assertNull(errorMsg);
     }
 
+    /**
+     * Spy some method of CloudImage (nothing by default)
+     * 
+     * @param image Image to spy
+     * @return New image
+     */
+    protected CloudImage spyCloudImage(CloudImage image) {
+        return image;
+    }
+
     protected String testSubSimple(String endpointUrl, String identity, String password, String region, String yaml,
             boolean errorInstanceWillOccursAtStart, boolean errorInstanceWillOccursAtEnd) throws Exception {
         String returnMessage = null;
@@ -89,8 +100,9 @@ public class AbstractTestOpenstackCloudClient {
         Assert.assertNull(client.getErrorInfo());
         Assert.assertNotNull(client.getImages());
         Assert.assertFalse(client.getImages().isEmpty());
-        CloudImage image = client.getImages().iterator().next();
-        Assert.assertTrue(client.canStartNewInstance(image));
+        CloudImage image = spyCloudImage(client.getImages().iterator().next());
+
+        Assert.assertEquals(client.canStartNewInstanceWithDetails(image), CanStartNewInstanceResult.yes());
         CloudInstance instance = null;
         try {
             instance = client.startNewInstance(image,
@@ -100,6 +112,7 @@ public class AbstractTestOpenstackCloudClient {
             if (errorInstanceWillOccursAtStart) {
                 statusWanted = InstanceStatus.ERROR;
                 statusInit.add(InstanceStatus.ERROR);
+                statusInit.add(InstanceStatus.STOPPED);
             }
             waitInstanceStatus(instance, statusWanted, 5000, statusInit);
             if (errorInstanceWillOccursAtStart) {
@@ -138,8 +151,8 @@ public class AbstractTestOpenstackCloudClient {
                     returnMessage = instance.getErrorInfo().getMessage();
                 }
             }
+            client.dispose();
         }
-        client.dispose();
         return returnMessage;
     }
 
