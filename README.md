@@ -75,6 +75,22 @@ NB: *domain_user* is used for both domains.
 {"auth":{"identity":{"methods":["password"],"password":{"user":{"name":"foo","domain":{"name":"ldap"},"password":"***"}}},"scope":{"project":{"name":"myTenant","domain":{"name":"myTenantDomain"}}}}}
 ```
 
+### Update status and restore instances delays
+
+Some properties can be overridden to customize default plugin behavior, in `internal.properties` or TeamCity UI (*Administration > Diagnostics > Internal Properties*).
+
+```
+# Delay (in seconds) to execute recurrent instances update status
+openstack.status.delay = 10
+
+# Delay (in seconds) to execute first instances update status, after image profile creation or update
+openstack.status.initial = 5
+
+# Delay (in seconds) to execute restore instances, after image profile creation or update
+openstack.restore.delay = 1
+
+```
+
 ## Usage
 
 Use Openstack virtual agents as regular build agents

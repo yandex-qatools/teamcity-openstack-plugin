@@ -48,7 +48,7 @@ public class OpenstackCloudInstance implements CloudInstance {
     private final ScheduledExecutorService executor;
     private String ip;
 
-    private final AtomicReference<InstanceStatus> status = new AtomicReference<>(InstanceStatus.SCHEDULED_TO_START);
+    private final AtomicReference<InstanceStatus> status = new AtomicReference<>(InstanceStatus.UNKNOWN);
 
     public OpenstackCloudInstance(@NotNull final OpenstackCloudImage image, @NotNull final String instanceId, @NotNull ServerPaths serverPaths,
             @NotNull ScheduledExecutorService executor) {
@@ -70,61 +70,53 @@ public class OpenstackCloudInstance implements CloudInstance {
         final String id = server.getId();
         final String name = server.getName();
         this.serverCreated = ServerCreated.builder().id(id).name(name).diskConfig(server.getDiskConfig().orNull()).build();
-        setStatus(InstanceStatus.RUNNING);
         LOG.info(String.format("Cloud openstack instance restored: %s", name));
     }
 
-    public synchronized void updateStatus() {
-        LOG.debug(String.format("Pinging %s for status", getName()));
-        if (serverCreated == null) {
-            LOG.debug("Will skip status updating cause instance is not created yet");
-            return;
-        }
+    public synchronized void updateStatus(Server.Status status) {
         try {
-            Server server = cloudImage.getNovaServerApi().get(serverCreated.getId());
-            if (server != null) {
-                Server.Status currentStatus = server.getStatus();
-                LOG.debug(String.format("Getting instance status from openstack for '%s', result is '%s' (previous internal status setted was '%s')",
-                        getName(), currentStatus, getStatus()));
-                switch (currentStatus) {
-                case BUILD:
-                case REBUILD:
-                    setStatus(InstanceStatus.STARTING);
-                    break;
-                case ACTIVE:
-                    // When OpenStack instance is stopping, the status is always 'ACTIVE' => check if termination started
-                    if (InstanceStatus.SCHEDULED_TO_STOP.equals(getStatus()) || InstanceStatus.STOPPING.equals(getStatus())) {
-                        setStatus(InstanceStatus.STOPPING);
-                    } else {
-                        setStatus(InstanceStatus.RUNNING);
-                    }
-                    break;
-                case ERROR:
-                    setStatus(InstanceStatus.ERROR);
-                    terminate();
-                    break;
-                case SHUTOFF:
-                    terminate();
-                    break;
-                case DELETED:
-                case SUSPENDED:
-                case PAUSED:
-                case SOFT_DELETED:
-                case UNKNOWN:
-                case UNRECOGNIZED:
-                case SHELVED:
-                case SHELVED_OFFLOADED:
-                default:
-                    setStatus(InstanceStatus.STOPPED);
-                    break;
-                }
-            } else {
-                setStatus(InstanceStatus.STOPPED);
+            LOG.debug(String.format("Set status for openstack instance %s: %s (previous was: %s)", getName(), status, getStatus()));
+            if (serverCreated == null) {
+                LOG.debug("Will skip status updating cause instance is not created yet");
+                return;
             }
-        } catch (Exception e) {
-            LOG.error("Got exception while calculating instance status, will terminate", e);
-            setStatus(InstanceStatus.ERROR);
-            terminate();
+            if (status == null) {
+                terminate();
+                throw new OpenstackException(String.format("Status cannot be found for instance (so terminated): %s", getName()));
+            }
+            switch (status) {
+            case BUILD:
+            case REBUILD:
+                setStatus(InstanceStatus.STARTING);
+                break;
+            case ACTIVE:
+                // When OpenStack instance is stopping, the status is always 'ACTIVE' => check if termination started
+                if (InstanceStatus.SCHEDULED_TO_STOP.equals(getStatus()) || InstanceStatus.STOPPING.equals(getStatus())) {
+                    setStatus(InstanceStatus.STOPPING);
+                } else {
+                    setStatus(InstanceStatus.RUNNING);
+                }
+                break;
+            case ERROR:
+                terminate();
+                break;
+            case SHUTOFF:
+                terminate();
+                break;
+            case DELETED:
+            case SUSPENDED:
+            case PAUSED:
+            case SOFT_DELETED:
+            case UNKNOWN:
+            case UNRECOGNIZED:
+            case SHELVED:
+            case SHELVED_OFFLOADED:
+            default:
+                setStatus(InstanceStatus.STOPPED);
+                break;
+            }
+        } catch (final Exception e) {
+            processError(e);
         }
     }
 
@@ -201,12 +193,12 @@ public class OpenstackCloudInstance implements CloudInstance {
                 cloudImage.getNovaServerApi().stop(serverCreated.getId());
             }
         } catch (final Exception e) {
-            setStatus(InstanceStatus.ERROR_CANNOT_STOP);
             processError(e);
+            setStatus(InstanceStatus.ERROR_CANNOT_STOP);
         }
     }
 
-    public void terminate() {
+    private void terminate() {
         LOG.info(String.format("Terminating cloud openstack instance %s", getName()));
         setStatus(InstanceStatus.STOPPED);
         try {
@@ -214,8 +206,8 @@ public class OpenstackCloudInstance implements CloudInstance {
                 cloudImage.getNovaServerApi().delete(serverCreated.getId());
             }
         } catch (final Exception e) {
-            setStatus(InstanceStatus.ERROR_CANNOT_STOP);
             processError(e);
+            setStatus(InstanceStatus.ERROR_CANNOT_STOP);
         }
     }
 
