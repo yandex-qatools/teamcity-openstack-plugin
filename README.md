@@ -159,8 +159,10 @@ openstack-test-teamcity-plugin:
 Execute locally:
 
 ```
+# git clone and provide test files (see previous "Build and Tests" section)
+git fetch origin
 git reset --hard origin/master
-mvn clean release:clean release:prepare
+mvn -B clean release:clean release:prepare -Dusername=yourGitHubLogin -Dpassword=yourGitHubPasswordOrToken
 ```
 
 And TeamCity [Release build](https://teamcity.jetbrains.com/viewType.html?buildTypeId=TeamCityThirdPartyPlugins_OpenStackCloudSupport_Release) will be executed.
