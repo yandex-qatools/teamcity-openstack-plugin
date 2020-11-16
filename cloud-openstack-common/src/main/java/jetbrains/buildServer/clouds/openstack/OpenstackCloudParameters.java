@@ -1,5 +1,7 @@
 package jetbrains.buildServer.clouds.openstack;
 
+import jetbrains.buildServer.agent.Constants;
+
 public final class OpenstackCloudParameters {
 
     private OpenstackCloudParameters() {
@@ -12,7 +14,7 @@ public final class OpenstackCloudParameters {
 
     public static final String ENDPOINT_URL = "clouds.openstack.endpointUrl";
     public static final String IDENTITY = "clouds.openstack.identity";
-    public static final String PASSWORD = "clouds.openstack.password"; // NOSONAR: No clear password
+    public static final String PASSWORD = Constants.SECURE_PROPERTY_PREFIX + "clouds.openstack.password"; // NOSONAR: No clear password
     public static final String REGION = "clouds.openstack.zone";
     public static final String INSTANCE_CAP = "clouds.openstack.instanceCap";
 
