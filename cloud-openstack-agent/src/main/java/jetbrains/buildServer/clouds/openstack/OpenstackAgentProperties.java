@@ -21,6 +21,7 @@ import com.google.gson.reflect.TypeToken;
 import com.intellij.openapi.diagnostic.Logger;
 
 import jetbrains.buildServer.agent.AgentLifeCycleAdapter;
+import jetbrains.buildServer.agent.AgentLifeCycleListener;
 import jetbrains.buildServer.agent.BuildAgent;
 import jetbrains.buildServer.agent.BuildAgentConfigurationEx;
 import jetbrains.buildServer.log.Loggers;
@@ -37,7 +38,7 @@ public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
     private static final String LOG_SETTINGS = "Setting %s to %s";
 
     public OpenstackAgentProperties(@NotNull final BuildAgentConfigurationEx agentConfiguration,
-            @NotNull EventDispatcher<AgentLifeCycleAdapter> dispatcher) {
+            @NotNull EventDispatcher<AgentLifeCycleListener> dispatcher) {
         this.agentConfiguration = agentConfiguration;
         dispatcher.addListener(this);
     }

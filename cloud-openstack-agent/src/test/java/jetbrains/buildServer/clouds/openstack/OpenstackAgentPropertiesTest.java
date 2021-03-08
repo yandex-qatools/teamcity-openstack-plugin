@@ -27,7 +27,7 @@ import org.testng.annotations.Test;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
-import jetbrains.buildServer.agent.AgentLifeCycleAdapter;
+import jetbrains.buildServer.agent.AgentLifeCycleListener;
 import jetbrains.buildServer.agent.BuildAgentConfigurationEx;
 import jetbrains.buildServer.clouds.openstack.util.Lo4jBeanAppender;
 import jetbrains.buildServer.util.EventDispatcher;
@@ -38,7 +38,7 @@ public class OpenstackAgentPropertiesTest {
 
     @BeforeMethod
     public void setUp() {
-        // Initialise manually, WireMockRule requieres JUnit
+        // Initialize manually, WireMockRule requires JUnit
         wireMockServer = new WireMockServer(wireMockConfig().dynamicPort());
         wireMockServer.start();
         WireMock.configureFor(wireMockServer.port());
@@ -82,7 +82,7 @@ public class OpenstackAgentPropertiesTest {
 
         context.setImposteriser(ClassImposteriser.INSTANCE);
         @SuppressWarnings("unchecked")
-        EventDispatcher<AgentLifeCycleAdapter> dispatcher = context.mock(EventDispatcher.class);
+        EventDispatcher<AgentLifeCycleListener> dispatcher = context.mock(EventDispatcher.class);
         context.checking(new Expectations() {
             {
                 allowing(dispatcher).addListener(with(any(OpenstackAgentProperties.class)));
