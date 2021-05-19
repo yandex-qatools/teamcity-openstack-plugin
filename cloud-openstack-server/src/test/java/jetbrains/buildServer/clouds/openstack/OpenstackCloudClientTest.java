@@ -137,7 +137,7 @@ public class OpenstackCloudClientTest extends AbstractTestOpenstackCloudClient {
         OpenstackCloudClient client = getClient(endpointUrl, identity, password, region, yaml);
         CloudInstance instance = client.startNewInstance(client.getImages().iterator().next(),
                 new CloudInstanceUserData("fakeName", "fakeToken", "localhost", (long) 0, "", "", new HashMap<>()));
-        waitInstanceStatus(instance, InstanceStatus.RUNNING, 5000,
+        waitInstanceStatus(instance, new ArrayList<>(Arrays.asList(InstanceStatus.RUNNING)), 5000,
                 new ArrayList<>(Arrays.asList(InstanceStatus.SCHEDULED_TO_START, InstanceStatus.STARTING)));
         while (!client.isInitialized()) {
             // Wait client initialization
@@ -168,7 +168,7 @@ public class OpenstackCloudClientTest extends AbstractTestOpenstackCloudClient {
         // Clean all
         instance = client.getImages().iterator().next().getInstances().iterator().next();
         client.terminateInstance(instance);
-        waitInstanceStatus(instance, InstanceStatus.STOPPED, 5000, new ArrayList<>(
+        waitInstanceStatus(instance, new ArrayList<>(Arrays.asList(InstanceStatus.STOPPED)), 5000, new ArrayList<>(
                 Arrays.asList(InstanceStatus.RUNNING, InstanceStatus.SCHEDULED_TO_STOP, InstanceStatus.STOPPING, InstanceStatus.STOPPED)));
         client.dispose();
     }

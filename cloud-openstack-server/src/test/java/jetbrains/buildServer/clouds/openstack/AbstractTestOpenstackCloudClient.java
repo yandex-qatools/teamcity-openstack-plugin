@@ -108,15 +108,19 @@ public class AbstractTestOpenstackCloudClient {
             instance = client.startNewInstance(image,
                     new CloudInstanceUserData("fakeName", "fakeToken", "localhost", (long) 0, "", "", new HashMap<>()));
             List<InstanceStatus> statusInit = new ArrayList<>(Arrays.asList(InstanceStatus.SCHEDULED_TO_START, InstanceStatus.STARTING));
-            InstanceStatus statusWanted = InstanceStatus.RUNNING;
+            List<InstanceStatus> statusWanted = new ArrayList<>(Arrays.asList(InstanceStatus.RUNNING));
             if (errorInstanceWillOccursAtStart) {
-                statusWanted = InstanceStatus.ERROR;
+                statusWanted = new ArrayList<>(Arrays.asList(InstanceStatus.ERROR, InstanceStatus.UNKNOWN));
                 statusInit.add(InstanceStatus.ERROR);
                 statusInit.add(InstanceStatus.STOPPED);
+                statusInit.add(InstanceStatus.UNKNOWN);
             }
             waitInstanceStatus(instance, statusWanted, 5000, statusInit);
             if (errorInstanceWillOccursAtStart) {
-                return instance.getErrorInfo().getMessage();
+                if (instance.getErrorInfo() != null) {
+                    return instance.getErrorInfo().getMessage();
+                }
+                return "no details";
             }
             String instanceId = ((OpenstackCloudInstance) instance).getOpenstackInstanceId();
             Assert.assertTrue(!StringUtil.isEmpty(instanceId));
@@ -141,10 +145,11 @@ public class AbstractTestOpenstackCloudClient {
                 client.terminateInstance(instance);
                 List<InstanceStatus> statusTerminate = new ArrayList<>(
                         Arrays.asList(InstanceStatus.RUNNING, InstanceStatus.SCHEDULED_TO_STOP, InstanceStatus.STOPPING, InstanceStatus.STOPPED));
-                InstanceStatus statusWanted = InstanceStatus.STOPPED;
+                List<InstanceStatus> statusWanted = new ArrayList<>(Arrays.asList(InstanceStatus.STOPPED));
                 if (errorInstanceWillOccursAtStart || errorInstanceWillOccursAtEnd) {
-                    statusWanted = InstanceStatus.ERROR;
+                    statusWanted = new ArrayList<>(Arrays.asList(InstanceStatus.ERROR, InstanceStatus.UNKNOWN));
                     statusTerminate.add(InstanceStatus.ERROR);
+                    statusTerminate.add(InstanceStatus.UNKNOWN);
                 }
                 waitInstanceStatus(instance, statusWanted, 5000, statusTerminate);
                 if (errorInstanceWillOccursAtEnd && instance.getErrorInfo() != null) {
@@ -156,9 +161,9 @@ public class AbstractTestOpenstackCloudClient {
         return returnMessage;
     }
 
-    protected void waitInstanceStatus(CloudInstance instance, InstanceStatus wanted, long intervalWait, List<InstanceStatus> intermediates)
+    protected void waitInstanceStatus(CloudInstance instance, List<InstanceStatus> wanted, long intervalWait, List<InstanceStatus> intermediates)
             throws InterruptedException {
-        while (!wanted.equals(instance.getStatus())) {
+        while (!wanted.contains(instance.getStatus())) {
             boolean currentIsInIntermediates = false;
             for (InstanceStatus intermediate : intermediates) {
                 if (instance.getStatus().equals(intermediate)) {

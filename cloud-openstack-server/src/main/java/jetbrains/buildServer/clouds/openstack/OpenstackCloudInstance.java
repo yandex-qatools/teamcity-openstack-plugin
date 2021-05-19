@@ -85,6 +85,9 @@ public class OpenstackCloudInstance implements CloudInstance {
                 throw new OpenstackException(String.format("Status cannot be found for instance (so terminated): %s", getName()));
             }
             switch (status) {
+            case UNKNOWN:
+                setStatus(InstanceStatus.UNKNOWN);
+                break;
             case BUILD:
             case REBUILD:
                 setStatus(InstanceStatus.STARTING);
@@ -107,7 +110,6 @@ public class OpenstackCloudInstance implements CloudInstance {
             case SUSPENDED:
             case PAUSED:
             case SOFT_DELETED:
-            case UNKNOWN:
             case UNRECOGNIZED:
             case SHELVED:
             case SHELVED_OFFLOADED:
