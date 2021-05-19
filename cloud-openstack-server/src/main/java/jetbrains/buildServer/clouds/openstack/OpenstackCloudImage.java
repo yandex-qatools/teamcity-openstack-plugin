@@ -101,7 +101,8 @@ public class OpenstackCloudImage implements CloudImage {
                 processError("Instances status cannot be updated", e);
             }
             for (OpenstackCloudInstance instance : getInstances()) {
-                instance.updateStatus(status.get(instance.getName()));
+                // If any error on global status retrieve, fill UNKNOW, avoiding any occasional (and not wanted) termination
+                instance.updateStatus(getErrorInfo() != null ? Server.Status.UNKNOWN : status.get(instance.getName()));
                 if (instance.getStatus() == InstanceStatus.STOPPED || instance.getStatus() == InstanceStatus.ERROR) {
                     forgetInstance(instance);
                 }

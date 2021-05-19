@@ -2,12 +2,9 @@ package jetbrains.buildServer.clouds.openstack;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
-import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
-import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 
 import java.io.File;
@@ -94,6 +91,48 @@ public class OpenstackCloudClientMockedTest extends AbstractTestOpenstackCloudCl
     }
 
     @Test
+    public void testTokenExpirationDoNotRemoveAgent() throws Exception {
+        initVMStart();
+
+        // First call is for VMs restoration => "empty" (not status for VM created)
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs(Scenario.STARTED).willSetStateTo(SCENARIO_STATE_INIT)
+                .willReturn(aResponse().withBodyFile("v2.1-nova-id-servers-detail-empty.json")));
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs(SCENARIO_STATE_INIT).willSetStateTo(SCENARIO_STATE_RUN)
+                .willReturn(aResponse().withBodyFile("v2.1-nova-id-servers-detail-build.json")));
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs(SCENARIO_STATE_RUN).willSetStateTo("tokenExpired1")
+                .willReturn(aResponse().withBodyFile("v2.1-nova-id-servers-detail-run.json")));
+
+        // Introduce authentication problem in status request (multiple, to deal with retry-mechanism)
+        final String msg401 = "{\"error\": {\"code\": 401, \"title\": \"Unauthorized\", \"message\": \"The request you have made requires authentication.\"}}";
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs("tokenExpired1").willSetStateTo("tokenExpired2")
+                .willReturn(aResponse().withStatus(401).withBody(msg401)));
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs("tokenExpired2").willSetStateTo("tokenExpired3")
+                .willReturn(aResponse().withStatus(401).withBody(msg401)));
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs("tokenExpired3").willSetStateTo("tokenExpired4")
+                .willReturn(aResponse().withStatus(401).withBody(msg401)));
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs("tokenExpired4").willSetStateTo("tokenExpired5")
+                .willReturn(aResponse().withStatus(401).withBody(msg401)));
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs("tokenExpired5").willSetStateTo("run2")
+                .willReturn(aResponse().withStatus(401).withBody(msg401)));
+
+        // Following request is a classic run
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs("run2").willSetStateTo("stopping")
+                .willReturn(aResponse().withBodyFile("v2.1-nova-id-servers-detail-run.json")));
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs("stopping").willSetStateTo("stopped")
+                .willReturn(aResponse().withBodyFile("v2.1-nova-id-servers-detail-stopping.json")));
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs("stopped")
+                .willReturn(aResponse().withBodyFile("v2.1-nova-id-servers-detail-stopped.json")));
+
+        // POST, do not add the content (should be ~"{ \"os-stop\" : null \"}" but only /action is a stop in scenario)
+        stubFor(post("/v2.1/nova-id/servers/server-id/action").willReturn(aResponse().withStatus(202)));
+
+        stubFor(delete("/v2.1/nova-id/servers/server-id").willReturn(aResponse().withStatus(204)));
+
+        // UNKNOW status could be in state due to 401 error
+        testSubSimple(wireMockServer.baseUrl() + "/v3", "default:my-tenant:ldap:foo", "bar", "region1", getTestYaml("Mock"), false, true);
+    }
+
+    @Test
     public void testRestore() throws Exception {
         initVMStart();
 
@@ -153,7 +192,7 @@ public class OpenstackCloudClientMockedTest extends AbstractTestOpenstackCloudCl
         // /action is a stop in testSubSimple scenario (should be here even if not called in real life)
         stubFor(post("/v2.1/nova-id/servers/server-id/action").willReturn(aResponse().withStatus(202)));
 
-        // DELETE is required for "terminate" instance even if status empty
+        // DELETE is required for "terminate" instance when no problem to retrieve all VMs status but current VM status is not found (see #62)
         stubFor(delete("/v2.1/nova-id/servers/server-id").willReturn(aResponse().withStatus(204)));
 
         String err = testSubSimple(wireMockServer.baseUrl() + "/v3", "default:my-tenant:ldap:foo", "bar", "region1", getTestYaml("Mock"), true,
@@ -233,8 +272,8 @@ public class OpenstackCloudClientMockedTest extends AbstractTestOpenstackCloudCl
 
         testSubSimple(wireMockServer.baseUrl() + "/v3", "default:my-tenant:ldap:foo", "bar", "region1", getTestYaml("Mock"), true, true);
 
-        // Test termination call after NPE
-        verify(deleteRequestedFor(urlMatching("/v2.1/nova-id/servers/server-id")));
+        // Since #62, no termination call because agent not removed if status unknown
+        // verify(deleteRequestedFor(urlMatching("/v2.1/nova-id/servers/server-id")));
     }
 
     @Test
@@ -252,8 +291,8 @@ public class OpenstackCloudClientMockedTest extends AbstractTestOpenstackCloudCl
 
         testSubSimple(wireMockServer.baseUrl() + "/v3", "default:my-tenant:ldap:foo", "bar", "region1", getTestYaml("Mock"), true, true);
 
-        // Test termination call after NPE on restore
-        verify(deleteRequestedFor(urlMatching("/v2.1/nova-id/servers/server-id")));
+        // Since #62, no termination call because agent not removed if status unknown
+        // verify(deleteRequestedFor(urlMatching("/v2.1/nova-id/servers/server-id")));
     }
 
 }
