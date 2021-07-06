@@ -245,7 +245,9 @@ public class OpenstackCloudImage implements CloudImage {
     @Nullable
     @Override
     public Integer getAgentPoolId() {
-        return null;
+        // Image are affected to 'default' agents pool at creation (required for TeamCity v2021.1 / TW-71939)
+        // Global "Agents Pools" TeamCity feature should be used to affect image(s) to some pool if needed
+        return 0;
     }
 
     @Nullable
