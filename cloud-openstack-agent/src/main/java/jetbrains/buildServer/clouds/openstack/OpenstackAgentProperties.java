@@ -54,7 +54,7 @@ public class OpenstackAgentProperties extends AgentLifeCycleAdapter {
             String rawMetadata = readDataFromUrl(metadataUrl);
             LOG.info(String.format("Detected Openstack instance. Will write parameters from metadata: %s", metadataUrl));
 
-            JsonElement metadataElement = JsonParser.parseString(rawMetadata);
+            JsonElement metadataElement = new JsonParser().parse(rawMetadata);
 
             String uuid = metadataElement.getAsJsonObject().get("uuid").getAsString();
             if (uuid != null) {
