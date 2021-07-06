@@ -94,8 +94,11 @@ public class OpenstackCloudClientMockedTest extends AbstractTestOpenstackCloudCl
     public void testTokenExpirationDoNotRemoveAgent() throws Exception {
         initVMStart();
 
-        // First call is for VMs restoration => "empty" (not status for VM created)
-        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs(Scenario.STARTED).willSetStateTo(SCENARIO_STATE_INIT)
+        // First call is for cloud profile creation => "empty" (not status for VM created)
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs(Scenario.STARTED).willSetStateTo("profilecreation")
+                .willReturn(aResponse().withBodyFile("v2.1-nova-id-servers-detail-empty.json")));
+        // Second call is for VMs restoration => "empty" (not status for VM created)
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs("profilecreation").willSetStateTo(SCENARIO_STATE_INIT)
                 .willReturn(aResponse().withBodyFile("v2.1-nova-id-servers-detail-empty.json")));
         stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs(SCENARIO_STATE_INIT).willSetStateTo(SCENARIO_STATE_RUN)
                 .willReturn(aResponse().withBodyFile("v2.1-nova-id-servers-detail-build.json")));
@@ -280,8 +283,13 @@ public class OpenstackCloudClientMockedTest extends AbstractTestOpenstackCloudCl
     public void testErrorClientNovaNPEOnRestore() throws Exception {
         initVMStart();
 
+        // First empty details for cloud profile creation
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs(Scenario.STARTED).willSetStateTo(SCENARIO_STATE_INIT)
+                .willReturn(aResponse().withBodyFile("v2.1-nova-id-servers-detail-empty.json")));
+
         // Bad response (no id) on every call (restore, status update, ...)
-        stubFor(get("/v2.1/nova-id/servers/detail").willReturn(aResponse().withBodyFile("v2.1-nova-id-servers-detail-not-defined.json")));
+        stubFor(get("/v2.1/nova-id/servers/detail").inScenario(SCENARIO).whenScenarioStateIs(SCENARIO_STATE_INIT)
+                .willReturn(aResponse().withBodyFile("v2.1-nova-id-servers-detail-not-defined.json")));
 
         // Termination due to NPE + unit 'testSubSimple' termination
         stubFor(delete("/v2.1/nova-id/servers/server-id").willReturn(aResponse().withStatus(202)));

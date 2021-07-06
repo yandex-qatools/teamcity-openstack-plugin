@@ -75,6 +75,9 @@ public class OpenstackCloudClient extends BuildServerAdapter implements CloudCli
             return;
         }
 
+        LOG.info(String.format("Testing credentials by retrieving servers list status (identity: %s)...", identity));
+        openstackApi.getNovaServerApi().listInDetail();
+
         final StringBuilder error = new StringBuilder();
         for (Map.Entry<String, Map<String, String>> entry : map.entrySet()) {
             final String imageName = entry.getKey().trim();
