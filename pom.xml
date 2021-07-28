@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>jetbrains.buildServer.clouds</groupId>
     <artifactId>cloud-openstack</artifactId>
-    <version>1.6</version>
+    <version>1.7-SNAPSHOT</version>
     <packaging>pom</packaging>
     <properties>
         <teamcity.version>2021.1</teamcity.version>
@@ -14,7 +14,7 @@
     </properties>
     <scm>
         <connection>scm:git:https://github.com/yandex-qatools/teamcity-openstack-plugin</connection>
-      <tag>cloud-openstack-1.6</tag>
+      <tag>HEAD</tag>
   </scm>
     <repositories>
         <repository>
